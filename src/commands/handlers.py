@@ -21,6 +21,9 @@ from src.aggregates.loan_application import LoanApplicationAggregate
 from src.event_store import EventStore
 from src.models.events import DecisionOutcome
 
+# PII fields to encrypt in LoanApplicationSubmitted payloads
+_PII_FIELDS = ["applicant_name", "applicant_id"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -153,6 +156,7 @@ class CommandHandler:
             aggregate_id=application_id,
             events=aggregate.pending_events,
             expected_version=0,
+            encrypt_fields=_PII_FIELDS,
         )
         logger.info("Application submitted: %s", application_id)
         return application_id

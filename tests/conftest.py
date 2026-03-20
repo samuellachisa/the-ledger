@@ -67,6 +67,7 @@ async def clean_tables(db_pool):
                 idempotency_keys,
                 erasure_requests,
                 schema_migration_runs,
+                integrity_alerts,
                 events,
                 event_streams
             RESTART IDENTITY CASCADE
@@ -141,3 +142,40 @@ async def idempotency_store(db_pool):
 async def erasure_handler(db_pool, event_store):
     from src.erasure import ErasureHandler
     return ErasureHandler(db_pool, event_store)
+
+
+@pytest_asyncio.fixture
+async def circuit_breaker():
+    from src.circuit_breaker import CircuitBreaker
+    return CircuitBreaker("test-breaker", failure_threshold=3, recovery_timeout_seconds=1.0)
+
+
+@pytest_asyncio.fixture
+async def leader_election(db_pool):
+    from src.leader_election import LeaderElection
+    election = LeaderElection(db_pool, "test-component")
+    yield election
+    await election.release()
+
+
+@pytest_asyncio.fixture
+async def integrity_monitor(db_pool, event_store):
+    from src.integrity.monitor import IntegrityMonitor
+    return IntegrityMonitor(db_pool, event_store, check_interval_seconds=999)
+
+
+@pytest_asyncio.fixture
+async def schema_checker(db_pool):
+    from src.schema_compat import SchemaCompatibilityChecker
+    from src.upcasting.registry import UpcasterRegistry
+    return SchemaCompatibilityChecker(db_pool, UpcasterRegistry())
+
+
+@pytest_asyncio.fixture
+def field_encryptor():
+    import base64
+    key = base64.b64encode(b"a" * 32).decode()
+    import os
+    os.environ["FIELD_ENCRYPTION_KEY"] = key
+    from src.encryption import FieldEncryptor
+    return FieldEncryptor.from_env()

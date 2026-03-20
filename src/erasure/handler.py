@@ -216,10 +216,16 @@ class ErasureHandler:
                 UPDATE application_summary_projection
                 SET applicant_name = $1
                 WHERE application_id IN (
-                    SELECT DISTINCT (e.payload->>'application_id')::uuid
+                    SELECT DISTINCT s.aggregate_id
                     FROM events e
-                    WHERE e.payload->>'applicant_id' = $2
+                    JOIN event_streams s ON e.stream_id = s.stream_id
+                    WHERE s.aggregate_type = 'LoanApplication'
+                      AND e.event_type = 'LoanApplicationSubmitted'
+                      AND (
+                          e.payload->>'applicant_id' = $2
+                          OR s.aggregate_id = $3
+                      )
                 )
                 """,
-                REDACTED, str(applicant_id),
+                REDACTED, str(applicant_id), applicant_id,
             )

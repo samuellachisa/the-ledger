@@ -41,6 +41,7 @@ from src.models.events import (
 from src.upcasting.registry import UpcasterRegistry
 from src.snapshots.store import SnapshotStore, SNAPSHOT_THRESHOLD
 from src.observability.metrics import get_metrics
+from src.encryption.field import FieldEncryptor
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,17 @@ logger = logging.getLogger(__name__)
 _RETRY_BASE_MS = 10
 _RETRY_FACTOR = 2
 _RETRY_MAX_ATTEMPTS = 5
+
+# PII fields that may be encrypted in LoanApplicationSubmitted payloads
+_ENCRYPTED_PII_FIELDS = ["applicant_name", "applicant_id"]
+
+
+def _get_field_encryptor() -> FieldEncryptor | None:
+    """Return a FieldEncryptor if FIELD_ENCRYPTION_KEY is set, else None."""
+    import os
+    if os.environ.get("FIELD_ENCRYPTION_KEY"):
+        return FieldEncryptor.from_env()
+    return None
 
 
 class StoredEvent:
@@ -99,6 +111,7 @@ class EventStore:
         aggregate_id: UUID,
         events: list[DomainEvent],
         expected_version: int,
+        encrypt_fields: list[str] | None = None,
     ) -> int:
         """
         Atomically append events to a stream with OCC.
@@ -109,6 +122,9 @@ class EventStore:
             events: List of domain events to append
             expected_version: The version the caller believes the stream is at.
                               Use 0 for a new stream (no events yet).
+            encrypt_fields: Optional list of payload field names to encrypt with
+                            AES-256-GCM before writing. Requires FIELD_ENCRYPTION_KEY
+                            env var. No-op if key is not set.
 
         Returns:
             New stream version after append.
@@ -166,6 +182,13 @@ class EventStore:
                 for i, event in enumerate(events):
                     position = expected_version + i + 1
                     payload = event.to_payload()
+
+                    # Encrypt PII fields if requested and key is available
+                    if encrypt_fields:
+                        _enc = _get_field_encryptor()
+                        if _enc:
+                            payload = _enc.encrypt_fields(payload, encrypt_fields)
+
                     metadata = {
                         **event.metadata,
                         "occurred_at": event.occurred_at.isoformat(),
@@ -486,6 +509,12 @@ class EventStore:
             payload=stored.payload,
             from_version=stored.schema_version,
         )
+
+        # Decrypt PII fields if any are encrypted
+        if stored.event_type == "LoanApplicationSubmitted":
+            _enc = _get_field_encryptor()
+            if _enc:
+                payload = _enc.decrypt_fields(payload, _ENCRYPTED_PII_FIELDS)
 
         event_class = EVENT_REGISTRY.get(stored.event_type)
         if event_class is None:

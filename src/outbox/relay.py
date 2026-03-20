@@ -33,6 +33,7 @@ from typing import Optional
 import asyncpg
 
 from src.observability.metrics import get_metrics
+from src.circuit_breaker.breaker import CircuitBreaker, CircuitOpenError
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,11 @@ class OutboxRelay:
         self._running = False
         self._published_count = 0
         self._failed_count = 0
+        self._circuit = CircuitBreaker(
+            name="outbox-publisher",
+            failure_threshold=5,
+            recovery_timeout_seconds=30.0,
+        )
 
     async def start(self) -> None:
         self._running = True
@@ -119,6 +125,8 @@ class OutboxRelay:
         return {
             "published_count": self._published_count,
             "failed_count": self._failed_count,
+            "circuit_state": self._circuit.state.value,
+            "circuit_failures": self._circuit.failure_count,
         }
 
     # -------------------------------------------------------------------------
@@ -131,6 +139,9 @@ class OutboxRelay:
                 processed = await self._process_batch()
                 if processed == 0:
                     await asyncio.sleep(POLL_INTERVAL_SECONDS)
+            except CircuitOpenError as e:
+                logger.warning("OutboxRelay: circuit open — backing off %.1fs", e.retry_after)
+                await asyncio.sleep(min(e.retry_after, 30.0))
             except asyncio.CancelledError:
                 raise
             except Exception as e:
@@ -163,11 +174,13 @@ class OutboxRelay:
     async def _process_entry(self, row: asyncpg.Record) -> None:
         outbox_id = row["outbox_id"]
         try:
-            await self._publisher.publish(
-                event_type=row["event_type"],
-                aggregate_type=row["aggregate_type"],
-                payload=dict(row["payload"]),
-                metadata=dict(row["metadata"]),
+            await self._circuit.call(
+                self._publisher.publish(
+                    event_type=row["event_type"],
+                    aggregate_type=row["aggregate_type"],
+                    payload=dict(row["payload"]),
+                    metadata=dict(row["metadata"]),
+                )
             )
             async with self._pool.acquire() as conn:
                 await conn.execute(
@@ -181,6 +194,9 @@ class OutboxRelay:
             self._published_count += 1
             get_metrics().increment("outbox_published_total")
 
+        except CircuitOpenError:
+            # Don't mark as failed — circuit will recover; re-try on next cycle
+            raise
         except Exception as e:
             new_retry = row["retry_count"] + 1
             new_status = "failed" if new_retry >= row["max_retries"] else "pending"

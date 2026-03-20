@@ -722,16 +722,23 @@ async def create_server(database_url: str, enable_auth: bool = False) -> None:
 
 async def main():
     import asyncio
+    from dotenv import load_dotenv
+    load_dotenv()  # loads .env into os.environ before anything reads it
+
+    log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
+
     database_url = os.environ.get(
         "DATABASE_URL",
         "postgresql://postgres:postgres@localhost:5432/apex_financial"
     )
-    await create_server(database_url)
+    enable_auth = os.environ.get("ENABLE_AUTH", "false").lower() == "true"
+
+    await create_server(database_url, enable_auth=enable_auth)
     async with stdio_server() as (read_stream, write_stream):
         await app.run(read_stream, write_stream, app.create_initialization_options())
 
 
 if __name__ == "__main__":
     import asyncio
-    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())

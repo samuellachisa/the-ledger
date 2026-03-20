@@ -419,3 +419,29 @@ CREATE INDEX IF NOT EXISTS idx_erasure_requests_applicant
 
 CREATE INDEX IF NOT EXISTS idx_erasure_requests_status
     ON erasure_requests (status) WHERE status = 'pending';
+
+-- =============================================================================
+-- integrity_alerts: Raised by IntegrityMonitor when a hash chain is broken.
+-- One open alert per application (unique constraint on application_id where
+-- resolved_at IS NULL prevents duplicate open alerts for the same stream).
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS integrity_alerts (
+    alert_id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    application_id      UUID NOT NULL,
+    broken_at_sequence  INTEGER,
+    entries_checked     INTEGER NOT NULL DEFAULT 0,
+    details             TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    acknowledged_at     TIMESTAMPTZ,
+    acknowledged_by     VARCHAR(100),
+    resolved_at         TIMESTAMPTZ,
+    resolved_by         VARCHAR(100)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_integrity_alerts_open
+    ON integrity_alerts (application_id)
+    WHERE resolved_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_integrity_alerts_unresolved
+    ON integrity_alerts (created_at DESC)
+    WHERE resolved_at IS NULL;
