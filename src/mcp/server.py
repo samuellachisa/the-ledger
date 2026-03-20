@@ -384,6 +384,7 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
 @app.list_resources()
 async def list_resources() -> list[Resource]:
     return [
+        Resource(uri="ledger://ledger/health", name="Health Check", mimeType="application/json"),
         Resource(uri="ledger://applications", name="All Applications", mimeType="application/json"),
         Resource(uri="ledger://applications/{id}", name="Application Summary", mimeType="application/json"),
         Resource(uri="ledger://applications/{id}/audit-trail", name="Audit Trail", mimeType="application/json"),
@@ -399,8 +400,22 @@ async def read_resource(uri: str) -> GetResourceResult:
 
     try:
         async with pool.acquire() as conn:
+            # ledger://ledger/health — must respond in < 10ms
+            if uri == "ledger://ledger/health":
+                import time
+                t0 = time.monotonic()
+                db_ok = await conn.fetchval("SELECT 1") == 1
+                latency_ms = (time.monotonic() - t0) * 1000
+                return GetResourceResult(contents=[
+                    TextContent(type="text", text=json.dumps({
+                        "status": "ok" if db_ok else "degraded",
+                        "db_latency_ms": round(latency_ms, 2),
+                        "projections": list(_handler._store._upcasters._upcasters.keys()) if _handler else [],
+                    }, default=str))
+                ])
+
             # ledger://applications
-            if uri == "ledger://applications":
+            elif uri == "ledger://applications":
                 data = await list_applications(conn)
                 return GetResourceResult(contents=[
                     TextContent(type="text", text=json.dumps(data, default=str))

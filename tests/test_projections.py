@@ -267,3 +267,53 @@ async def test_daemon_get_lag(event_store, daemon, db_pool):
     assert "head_position" in lag
     assert lag["event_lag"] >= 0
     assert lag["time_lag_ms"] >= 0.0
+
+
+@pytest.mark.asyncio
+async def test_projection_lag_under_50_concurrent_handlers(event_store, daemon, db_pool):
+    """
+    50 concurrent command handlers submit applications simultaneously.
+    After all writes complete, the ApplicationSummary projection must
+    reflect all 50 applications within the 500ms SLO.
+    """
+    from src.models.events import LoanApplicationSubmitted
+
+    N = 50
+    app_ids = [uuid4() for _ in range(N)]
+
+    # Fire 50 concurrent appends
+    async def submit_one(app_id):
+        event = LoanApplicationSubmitted(
+            aggregate_id=app_id,
+            applicant_name=f"Load Test {app_id}",
+            loan_amount=10000.0,
+            loan_purpose="Load test",
+            applicant_id=uuid4(),
+            submitted_by="load_test",
+        )
+        await event_store.append("LoanApplication", app_id, [event], expected_version=0)
+
+    write_start = time.monotonic()
+    await asyncio.gather(*[submit_one(aid) for aid in app_ids])
+    write_end = time.monotonic()
+
+    # Poll until all 50 are projected or 500ms SLO expires
+    deadline = write_end + 0.5  # 500ms SLO from last write
+    projected = set()
+    while time.monotonic() < deadline and len(projected) < N:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT application_id FROM application_summary_projection "
+                "WHERE application_id = ANY($1::uuid[])",
+                app_ids,
+            )
+            projected = {r["application_id"] for r in rows}
+        if len(projected) < N:
+            await asyncio.sleep(0.01)
+
+    lag_ms = (time.monotonic() - write_end) * 1000
+    assert len(projected) == N, (
+        f"Only {len(projected)}/{N} applications projected within 500ms SLO "
+        f"(lag: {lag_ms:.0f}ms)"
+    )
+    assert lag_ms < 500, f"Projection lag {lag_ms:.0f}ms exceeds 500ms SLO under 50 concurrent handlers"
