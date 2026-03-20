@@ -59,14 +59,14 @@ async def clean_tables(db_pool):
                 compliance_audit_projection,
                 agent_performance_projection,
                 application_summary_projection,
+                saga_instances,
                 events,
                 event_streams
             RESTART IDENTITY CASCADE
         """)
         # Reset checkpoints
-        await conn.execute("""
-            UPDATE projection_checkpoints SET last_position = 0
-        """)
+        await conn.execute("UPDATE projection_checkpoints SET last_position = 0")
+        await conn.execute("UPDATE saga_checkpoints SET last_position = 0")
     yield
 
 
@@ -79,3 +79,9 @@ async def event_store(db_pool):
 async def handler(event_store):
     from src.commands.handlers import CommandHandler
     return CommandHandler(event_store)
+
+
+@pytest_asyncio.fixture
+async def saga_manager(db_pool, event_store, handler):
+    from src.saga import SagaManager
+    return SagaManager(db_pool, event_store, handler)

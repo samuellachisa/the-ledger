@@ -192,3 +192,41 @@ CREATE TABLE IF NOT EXISTS audit_ledger_projection (
 
 CREATE INDEX IF NOT EXISTS idx_audit_ledger_application
     ON audit_ledger_projection (application_id, sequence_number);
+
+-- =============================================================================
+-- saga_instances: Durable state for the LoanProcessingSaga process manager.
+-- One row per loan application. Tracks which step the saga is at so it can
+-- resume after a crash without re-issuing already-completed commands.
+--
+-- step values: started | compliance_requested | compliance_finalized |
+--              completed | failed
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS saga_instances (
+    saga_id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    application_id          UUID NOT NULL UNIQUE,   -- one saga per application
+    step                    VARCHAR(50) NOT NULL DEFAULT 'started',
+    compliance_record_id    UUID,                   -- set after compliance_requested
+    last_causation_id       UUID,                   -- event_id that triggered last step
+    retry_count             INTEGER NOT NULL DEFAULT 0,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_saga_instances_compliance_record
+    ON saga_instances (compliance_record_id)
+    WHERE compliance_record_id IS NOT NULL;
+
+-- =============================================================================
+-- saga_checkpoints: Tracks the last global_position processed by each saga.
+-- Mirrors projection_checkpoints — same polling pattern, separate table to
+-- keep saga concerns isolated from projection concerns.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS saga_checkpoints (
+    saga_name       VARCHAR(100) PRIMARY KEY,
+    last_position   BIGINT NOT NULL DEFAULT 0,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO saga_checkpoints (saga_name, last_position)
+VALUES ('LoanProcessingSaga', 0)
+ON CONFLICT (saga_name) DO NOTHING;
