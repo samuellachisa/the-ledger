@@ -62,6 +62,7 @@ from src.upcasting.registry import UpcasterRegistry
 from src.auth.tokens import TokenStore, AuthError
 from src.ratelimit.limiter import RateLimiter, RateLimitExceededError
 from src.dead_letter.queue import DeadLetterQueue
+from src.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -296,6 +297,22 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="refresh_token",
+            description=(
+                "Exchange a valid auth token for a fresh one before it expires. "
+                "PRECONDITIONS: _auth_token must be valid and not yet expired. "
+                "The old token is revoked atomically. "
+                "ERRORS: TokenExpired, TokenRevoked, InvalidToken."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["_auth_token"],
+                "properties": {
+                    "_auth_token": {"type": "string", "description": "Current valid bearer token"},
+                },
+            },
+        ),
     ]
 
 
@@ -391,26 +408,39 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
             ))
             return _ok({"status": "ApplicationFinalized"})
 
+        elif name == "refresh_token":
+            if _token_store is None:
+                return _err("AuthNotEnabled", "Authentication is not enabled on this server")
+            new_token = await _token_store.refresh(arguments["_auth_token"])
+            return _ok({"token": new_token, "status": "TokenRefreshed"})
+
         else:
             return _err("UnknownTool", f"Tool '{name}' not found")
 
     except OptimisticConcurrencyError as e:
+        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "occ_error"})
         return _err("OptimisticConcurrencyError", str(e), e.to_dict())
     except BusinessRuleViolationError as e:
+        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "rule_error"})
         return _err("BusinessRuleViolationError", str(e), {"rule": e.rule})
     except InvalidStateTransitionError as e:
+        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "state_error"})
         return _err("InvalidStateTransitionError", str(e), {
             "from_state": e.from_state, "to_state": e.to_state
         })
     except AggregateNotFoundError as e:
+        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "not_found"})
         return _err("AggregateNotFoundError", str(e))
     except AuthError as e:
+        get_metrics().increment("auth_failures_total", labels={"reason": e.code})
         return _err(e.code, str(e))
     except RateLimitExceededError as e:
+        get_metrics().increment("rate_limit_hits_total", labels={"agent_id": e.agent_id, "action": e.action})
         return _err("RateLimitExceeded", str(e), {
             "retry_after_seconds": e.retry_after_seconds
         })
     except Exception as e:
+        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "internal_error"})
         logger.exception("Unexpected error in tool %s", name)
         return _err("InternalError", str(e))
 
@@ -430,6 +460,10 @@ async def list_resources() -> list[Resource]:
         Resource(uri="ledger://agents/performance", name="Agent Performance", mimeType="application/json"),
         Resource(uri="ledger://integrity/{id}", name="Integrity Check", mimeType="application/json"),
         Resource(uri="ledger://dead-letters", name="Dead Letter Queue", mimeType="application/json"),
+        Resource(uri="ledger://metrics", name="System Metrics", mimeType="application/json"),
+        Resource(uri="ledger://metrics/prometheus", name="Prometheus Metrics", mimeType="text/plain"),
+        Resource(uri="ledger://events/correlation/{id}", name="Correlation Chain", mimeType="application/json"),
+        Resource(uri="ledger://events/causation/{id}", name="Causation Chain", mimeType="application/json"),
     ]
 
 
@@ -455,7 +489,23 @@ async def read_resource(uri: str) -> GetResourceResult:
 
             # ledger://applications
             elif uri == "ledger://applications":
-                data = await list_applications(conn)
+                # Support ?status=Submitted&limit=50&offset=0 style filtering
+                # URI format: ledger://applications?status=X&limit=N
+                status_filter = None
+                limit = 50
+                offset = 0
+                if "?" in uri:
+                    base, qs = uri.split("?", 1)
+                    for part in qs.split("&"):
+                        if "=" in part:
+                            k, v = part.split("=", 1)
+                            if k == "status":
+                                status_filter = v
+                            elif k == "limit":
+                                limit = int(v)
+                            elif k == "offset":
+                                offset = int(v)
+                data = await list_applications(conn, status=status_filter, limit=limit, offset=offset)
                 return GetResourceResult(contents=[
                     TextContent(type="text", text=json.dumps(data, default=str))
                 ])
@@ -524,6 +574,39 @@ async def read_resource(uri: str) -> GetResourceResult:
                         {"unresolved": data, "counts_by_processor": counts}, default=str
                     ))
                 ])
+
+            # ledger://metrics
+            elif uri == "ledger://metrics":
+                snap = get_metrics().snapshot()
+                return GetResourceResult(contents=[
+                    TextContent(type="text", text=json.dumps(snap, default=str))
+                ])
+
+            # ledger://metrics/prometheus
+            elif uri == "ledger://metrics/prometheus":
+                from src.observability.exporters import PrometheusExporter
+                text = PrometheusExporter(get_metrics()).export()
+                return GetResourceResult(contents=[TextContent(type="text", text=text)])
+
+            # ledger://events/correlation/{id}
+            elif uri.startswith("ledger://events/correlation/"):
+                corr_id = UUID(uri.split("/")[-1])
+                events = await event_store.load_correlation_chain(corr_id)
+                return GetResourceResult(contents=[TextContent(type="text", text=json.dumps(
+                    [{"event_type": e.event_type, "aggregate_type": e.aggregate_type,
+                      "aggregate_id": str(e.aggregate_id), "global_position": e.global_position,
+                      "event_id": str(e.event_id)} for e in events], default=str
+                ))])
+
+            # ledger://events/causation/{id}
+            elif uri.startswith("ledger://events/causation/"):
+                root_id = UUID(uri.split("/")[-1])
+                events = await event_store.load_causation_chain(root_id)
+                return GetResourceResult(contents=[TextContent(type="text", text=json.dumps(
+                    [{"event_type": e.event_type, "aggregate_type": e.aggregate_type,
+                      "aggregate_id": str(e.aggregate_id), "global_position": e.global_position,
+                      "event_id": str(e.event_id), "causation_id": str(e.causation_id)} for e in events], default=str
+                ))])
 
             else:
                 return GetResourceResult(contents=[

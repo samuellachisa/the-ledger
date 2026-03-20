@@ -32,6 +32,8 @@ from typing import Optional
 
 import asyncpg
 
+from src.observability.metrics import get_metrics
+
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL_SECONDS = 0.5
@@ -177,6 +179,7 @@ class OutboxRelay:
                     outbox_id,
                 )
             self._published_count += 1
+            get_metrics().increment("outbox_published_total")
 
         except Exception as e:
             new_retry = row["retry_count"] + 1
@@ -192,6 +195,7 @@ class OutboxRelay:
                 )
             if new_status == "failed":
                 self._failed_count += 1
+                get_metrics().increment("outbox_failed_total")
                 logger.error(
                     "Outbox entry %s permanently failed after %d retries: %s",
                     outbox_id, new_retry, e,

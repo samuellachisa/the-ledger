@@ -180,6 +180,48 @@ class TokenStore:
             roles=roles,
         )
 
+    async def refresh(self, raw_token: str, ttl_hours: int = TOKEN_TTL_HOURS) -> str:
+        """
+        Exchange a valid (non-expired, non-revoked) token for a fresh one.
+
+        The old token is revoked atomically. The new token inherits the same
+        agent_id and roles. Returns the new raw token.
+
+        Raises AuthError if the presented token is invalid, expired, or revoked.
+        """
+        identity = await self.verify(raw_token)  # validates current token
+
+        # Issue new token with same agent_id and roles
+        new_raw = await self.issue_token(
+            agent_id=identity.agent_id,
+            roles=identity.roles,
+            ttl_hours=ttl_hours,
+        )
+
+        # Record parent relationship and revoke old token atomically
+        new_hash = self._hash(new_raw)
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Set parent_token_id on the new token
+                await conn.execute(
+                    """
+                    UPDATE agent_tokens
+                    SET parent_token_id = $1
+                    WHERE token_hash = $2
+                    """,
+                    identity.token_id, new_hash,
+                )
+                # Revoke the old token
+                await conn.execute(
+                    "UPDATE agent_tokens SET revoked_at = NOW() WHERE token_id = $1",
+                    identity.token_id,
+                )
+
+        logger.info(
+            "Token refreshed for agent %s (old=%s)", identity.agent_id, identity.token_id
+        )
+        return new_raw
+
     async def revoke(self, token_id: UUID, revoked_by: str) -> bool:
         """Revoke a token. Returns True if found and revoked."""
         async with self._pool.acquire() as conn:

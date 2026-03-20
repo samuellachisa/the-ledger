@@ -20,6 +20,7 @@ import asyncpg
 
 from src.event_store import EventStore, StoredEvent
 from src.dead_letter.queue import DeadLetterQueue
+from src.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +217,7 @@ class ProjectionDaemon:
                             projection_name,
                         )
                 self._last_positions[projection_name] = event.global_position
+                get_metrics().increment("projection_events_processed_total", labels={"projection_name": projection_name})
                 return
             except asyncio.CancelledError:
                 raise

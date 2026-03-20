@@ -2,3 +2,5 @@
 from src.outbox.relay import OutboxRelay, MessagePublisher
 
 __all__ = ["OutboxRelay", "MessagePublisher"]
+
+__all__ = ["OutboxRelay", "MessagePublisher"]

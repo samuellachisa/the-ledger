@@ -40,6 +40,7 @@ from src.models.events import (
 )
 from src.upcasting.registry import UpcasterRegistry
 from src.snapshots.store import SnapshotStore, SNAPSHOT_THRESHOLD
+from src.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -154,15 +155,14 @@ class EventStore:
                         "WHERE aggregate_type = $1 AND aggregate_id = $2",
                         aggregate_type, aggregate_id
                     )
+                    get_metrics().increment("occ_conflicts_total", labels={"aggregate_type": aggregate_type})
                     raise OptimisticConcurrencyError(
                         stream_id=stream_id or uuid4(),
                         expected=expected_version,
                         actual=actual or -1,
                     )
 
-                stream_id: UUID = result["stream_id"]
-
-                # Step 2: Insert events
+                stream_id: UUID = result["stream_id"]                # Step 2: Insert events
                 for i, event in enumerate(events):
                     position = expected_version + i + 1
                     payload = event.to_payload()
@@ -208,6 +208,11 @@ class EventStore:
                     )
 
                 return new_version
+
+        # Instrument after transaction commits
+        m = get_metrics()
+        m.increment("events_appended_total", value=len(events), labels={"aggregate_type": aggregate_type})
+        return new_version
 
     async def maybe_snapshot(
         self,
@@ -261,6 +266,10 @@ class EventStore:
             snapshot = await self._snapshots.load(aggregate_type, aggregate_id)
             if snapshot:
                 effective_from = snapshot["stream_position"]
+                get_metrics().increment("snapshot_hits_total", labels={"aggregate_type": aggregate_type})
+                logger.debug("Snapshot hit for %s/%s at version %d", aggregate_type, aggregate_id, effective_from)
+            else:
+                get_metrics().increment("snapshot_misses_total", labels={"aggregate_type": aggregate_type})
                 logger.debug(
                     "Snapshot hit for %s/%s at version %d",
                     aggregate_type, aggregate_id, effective_from,
@@ -342,6 +351,82 @@ class EventStore:
                 "WHERE aggregate_type = $1 AND aggregate_id = $2",
                 aggregate_type, aggregate_id
             )
+
+    async def load_correlation_chain(self, correlation_id: UUID) -> list[StoredEvent]:
+        """
+        Load all events that share a correlation_id, in global order.
+
+        Answers: "show me every event that belongs to this saga/request."
+        Uses the idx_events_correlation_id index for O(log n) lookup.
+        """
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT * FROM events
+                WHERE correlation_id = $1
+                ORDER BY global_position
+                """,
+                correlation_id,
+            )
+        return [StoredEvent(row) for row in rows]
+
+    async def load_causation_chain(self, root_event_id: UUID, max_depth: int = 20) -> list[StoredEvent]:
+        """
+        Walk the causation chain starting from root_event_id using a recursive CTE.
+
+        Answers: "show me every event that was caused (directly or transitively)
+        by this event." Useful for debugging saga failures.
+
+        max_depth guards against infinite loops in malformed data.
+        """
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                WITH RECURSIVE chain AS (
+                    SELECT *, 0 AS depth FROM events WHERE event_id = $1
+                    UNION ALL
+                    SELECT e.*, c.depth + 1
+                    FROM events e
+                    JOIN chain c ON e.causation_id = c.event_id
+                    WHERE c.depth < $2
+                )
+                SELECT * FROM chain ORDER BY global_position
+                """,
+                root_event_id, max_depth,
+            )
+        return [StoredEvent(row) for row in rows]
+
+    async def load_filtered(
+        self,
+        status: Optional[str] = None,
+        after_date: Optional[str] = None,
+        before_date: Optional[str] = None,
+        aggregate_type: Optional[str] = None,
+        limit: int = 100,
+        after_position: int = 0,
+    ) -> list[StoredEvent]:
+        """
+        Filtered event query for operational use.
+        Supports filtering by aggregate_type, date range, and pagination.
+        """
+        async with self._pool.acquire() as conn:
+            query = "SELECT * FROM events WHERE global_position > $1"
+            args: list[Any] = [after_position]
+
+            if aggregate_type:
+                args.append(aggregate_type)
+                query += f" AND aggregate_type = ${len(args)}"
+            if after_date:
+                args.append(after_date)
+                query += f" AND recorded_at >= ${len(args)}"
+            if before_date:
+                args.append(before_date)
+                query += f" AND recorded_at <= ${len(args)}"
+
+            args.append(limit)
+            query += f" ORDER BY global_position LIMIT ${len(args)}"
+            rows = await conn.fetch(query, *args)
+        return [StoredEvent(row) for row in rows]
 
     async def append_with_retry(
         self,

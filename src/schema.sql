@@ -321,3 +321,22 @@ CREATE TABLE IF NOT EXISTS rate_limit_buckets (
     last_refill     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (agent_id, action)
 );
+
+-- =============================================================================
+-- Index to support correlation/causation chain queries.
+-- Allows "show me all events caused by this correlation_id" in O(log n).
+-- =============================================================================
+CREATE INDEX IF NOT EXISTS idx_events_correlation_id
+    ON events (correlation_id)
+    WHERE correlation_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_events_causation_id
+    ON events (causation_id)
+    WHERE causation_id IS NOT NULL;
+
+-- =============================================================================
+-- refresh_tokens: Allows agents to exchange an expiring token for a new one
+-- without re-authenticating from scratch.
+-- parent_token_id: the token that was exchanged to produce this one
+-- =============================================================================
+ALTER TABLE agent_tokens ADD COLUMN IF NOT EXISTS parent_token_id UUID REFERENCES agent_tokens(token_id);
