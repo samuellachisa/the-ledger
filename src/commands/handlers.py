@@ -257,7 +257,7 @@ class CommandHandler:
         )
 
     async def handle_finalize_compliance(self, cmd: FinalizeComplianceCommand) -> bool:
-        """Finalize compliance and update loan application. Returns overall_passed."""
+        """Finalize compliance and transition loan application to PendingDecision. Returns overall_passed."""
         comp_events = await self._store.load_stream(
             ComplianceRecordAggregate.aggregate_type, cmd.compliance_record_id
         )
@@ -271,17 +271,20 @@ class CommandHandler:
             expected_version=compliance.version - len(compliance.pending_events),
         )
 
-        # Update loan application with compliance result
+        # Transition loan application: ComplianceCheck → PendingDecision
         app_events = await self._store.load_stream(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
         app.set_compliance_result(compliance.overall_passed)
+        app.move_to_pending_decision()
 
-        # Move to PendingDecision
-        from src.models.events import ComplianceCheckRequested
-        # The compliance result is communicated via the compliance aggregate's finalization
-        # The loan app moves to PendingDecision — this is handled by the decision command
+        await self._store.append(
+            aggregate_type=LoanApplicationAggregate.aggregate_type,
+            aggregate_id=cmd.application_id,
+            events=app.pending_events,
+            expected_version=app.version - len(app.pending_events),
+        )
 
         return compliance.overall_passed
 
@@ -291,19 +294,13 @@ class CommandHandler:
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
 
-        # Load compliance result from compliance record
-        if app.compliance_record_id:
+        # Load compliance result from compliance record (in case set_compliance_result wasn't called)
+        if app.compliance_record_id and app.compliance_passed is None:
             comp_events = await self._store.load_stream(
                 ComplianceRecordAggregate.aggregate_type, app.compliance_record_id
             )
             compliance = ComplianceRecordAggregate.load(app.compliance_record_id, comp_events)
             app.set_compliance_result(compliance.overall_passed)
-
-        # Move to PendingDecision if in ComplianceCheck
-        from src.models.events import LoanStatus
-        if app.status == LoanStatus.COMPLIANCE_CHECK:
-            # Transition via internal state — compliance check is done
-            app.status = LoanStatus.PENDING_DECISION
 
         app.generate_decision(
             outcome=cmd.outcome,

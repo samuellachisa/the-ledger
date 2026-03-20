@@ -23,6 +23,7 @@ from src.models.events import (
     ApplicationWithdrawn,
     BusinessRuleViolationError,
     ComplianceCheckRequested,
+    ComplianceFinalizedOnApplication,
     CreditAnalysisCompleted,
     CreditAnalysisRequested,
     DecisionGenerated,
@@ -126,7 +127,7 @@ class LoanApplicationAggregate(AggregateRoot):
         ))
 
     def record_fraud_check(self, fraud_risk_score: float, flags: list[str], passed: bool) -> None:
-        self._assert_status(LoanStatus.AWAITING_ANALYSIS)
+        self._assert_status(LoanStatus.UNDER_REVIEW)
         self._raise_event(FraudCheckCompleted(
             aggregate_id=self.aggregate_id,
             fraud_risk_score=fraud_risk_score,
@@ -139,6 +140,15 @@ class LoanApplicationAggregate(AggregateRoot):
         self._raise_event(ComplianceCheckRequested(
             aggregate_id=self.aggregate_id,
             compliance_record_id=compliance_record_id,
+        ))
+
+    def move_to_pending_decision(self) -> None:
+        """Called after compliance is finalized. Transitions ComplianceCheck → PendingDecision."""
+        self._assert_status(LoanStatus.COMPLIANCE_CHECK)
+        self._raise_event(ComplianceFinalizedOnApplication(
+            aggregate_id=self.aggregate_id,
+            compliance_record_id=self.compliance_record_id,
+            compliance_passed=self.compliance_passed or False,
         ))
 
     def generate_decision(
@@ -252,6 +262,10 @@ class LoanApplicationAggregate(AggregateRoot):
     def when_ComplianceCheckRequested(self, event: ComplianceCheckRequested) -> None:
         self.compliance_record_id = event.compliance_record_id
         self.status = LoanStatus.COMPLIANCE_CHECK
+
+    def when_ComplianceFinalizedOnApplication(self, event: ComplianceFinalizedOnApplication) -> None:
+        self.compliance_passed = event.compliance_passed
+        self.status = LoanStatus.PENDING_DECISION
 
     def when_DecisionGenerated(self, event: DecisionGenerated) -> None:
         self.last_decision = event.outcome

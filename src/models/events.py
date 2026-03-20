@@ -194,6 +194,14 @@ class ComplianceCheckRequested(DomainEvent):
     compliance_record_id: UUID
 
 
+class ComplianceFinalizedOnApplication(DomainEvent):
+    """Recorded on LoanApplication when compliance is finalized. Transitions to PendingDecision."""
+    aggregate_type: str = "LoanApplication"
+    event_type: str = "ComplianceFinalizedOnApplication"
+    compliance_record_id: UUID
+    compliance_passed: bool
+
+
 class DecisionGenerated(DomainEvent):
     aggregate_type: str = "LoanApplication"
     event_type: str = "DecisionGenerated"
@@ -363,6 +371,7 @@ EVENT_REGISTRY: dict[str, type[DomainEvent]] = {
     "CreditAnalysisCompleted": CreditAnalysisCompleted,
     "FraudCheckCompleted": FraudCheckCompleted,
     "ComplianceCheckRequested": ComplianceCheckRequested,
+    "ComplianceFinalizedOnApplication": ComplianceFinalizedOnApplication,
     "DecisionGenerated": DecisionGenerated,
     "ApplicationApproved": ApplicationApproved,
     "ApplicationDenied": ApplicationDenied,

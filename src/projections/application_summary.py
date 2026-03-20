@@ -68,6 +68,20 @@ async def handle_application_summary(conn: asyncpg.Connection, event: StoredEven
             agg_id,
         )
 
+    elif event.event_type == "ComplianceFinalizedOnApplication":
+        await conn.execute(
+            """
+            UPDATE application_summary_projection
+            SET status = 'PendingDecision',
+                compliance_passed = $2,
+                current_version = current_version + 1,
+                updated_at = NOW()
+            WHERE application_id = $1
+            """,
+            agg_id,
+            payload.get("compliance_passed"),
+        )
+
     elif event.event_type == "DecisionGenerated":
         await conn.execute(
             """
