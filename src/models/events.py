@@ -362,6 +362,22 @@ class IntegrityCheckCompleted(DomainEvent):
 
 
 # =============================================================================
+# GDPR Erasure Events
+# =============================================================================
+
+class PersonalDataErased(DomainEvent):
+    """
+    Tombstone event appended to a stream when a GDPR erasure request is applied.
+    Projections react to this event by removing PII fields from read models.
+    The original events remain immutable in the log.
+    """
+    event_type: str = "PersonalDataErased"
+    applicant_id: UUID
+    erasure_id: UUID
+    fields_erased: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
 # Event Registry: maps event_type string → Pydantic class
 # =============================================================================
 
@@ -389,4 +405,5 @@ EVENT_REGISTRY: dict[str, type[DomainEvent]] = {
     "ComplianceRecordFinalized": ComplianceRecordFinalized,
     "AuditEntryRecorded": AuditEntryRecorded,
     "IntegrityCheckCompleted": IntegrityCheckCompleted,
+    "PersonalDataErased": PersonalDataErased,
 }

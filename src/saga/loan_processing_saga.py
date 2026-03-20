@@ -169,15 +169,25 @@ class SagaManager:
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_position: int = 0
+        self._batch_done = asyncio.Event()
 
     async def start(self) -> None:
         self._running = True
+        self._batch_done.set()
         await self._load_checkpoint()
         self._task = asyncio.create_task(self._run_loop(), name="SagaManager")
         logger.info("SagaManager started from position %d", self._last_position)
 
-    async def stop(self) -> None:
+    async def stop(self, drain_timeout_seconds: float = 5.0) -> None:
+        """
+        Gracefully stop the saga manager.
+        Waits up to drain_timeout_seconds for the current batch to finish.
+        """
         self._running = False
+        try:
+            await asyncio.wait_for(self._batch_done.wait(), timeout=drain_timeout_seconds)
+        except asyncio.TimeoutError:
+            logger.warning("SagaManager drain timed out after %.1fs", drain_timeout_seconds)
         if self._task:
             self._task.cancel()
             try:
@@ -208,9 +218,13 @@ class SagaManager:
         if not events:
             return
 
-        for event in events:
-            await self._dispatch(event)
-            await self._advance_checkpoint(event.global_position)
+        self._batch_done.clear()
+        try:
+            for event in events:
+                await self._dispatch(event)
+                await self._advance_checkpoint(event.global_position)
+        finally:
+            self._batch_done.set()
 
     async def _dispatch(self, event: StoredEvent) -> None:
         """Route an event to the appropriate saga handler."""

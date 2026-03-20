@@ -340,3 +340,82 @@ CREATE INDEX IF NOT EXISTS idx_events_causation_id
 -- parent_token_id: the token that was exchanged to produce this one
 -- =============================================================================
 ALTER TABLE agent_tokens ADD COLUMN IF NOT EXISTS parent_token_id UUID REFERENCES agent_tokens(token_id);
+
+-- =============================================================================
+-- schema_migration_runs: Audit trail for upcaster dry-run / validation runs.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS schema_migration_runs (
+    run_id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type          VARCHAR(200) NOT NULL,
+    from_version        INTEGER NOT NULL,
+    events_affected     INTEGER NOT NULL DEFAULT 0,
+    errors              INTEGER NOT NULL DEFAULT 0,
+    ran_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =============================================================================
+-- archived_at column on event_streams: marks streams moved to cold storage.
+-- =============================================================================
+ALTER TABLE event_streams ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_event_streams_archived
+    ON event_streams (archived_at)
+    WHERE archived_at IS NOT NULL;
+
+-- =============================================================================
+-- tenant_id columns: row-level multi-tenancy isolation.
+-- =============================================================================
+ALTER TABLE event_streams ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE events ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE saga_instances ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE agent_tokens ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE rate_limit_buckets ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE aggregate_snapshots ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+ALTER TABLE dead_letter_events ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
+
+CREATE INDEX IF NOT EXISTS idx_event_streams_tenant
+    ON event_streams (tenant_id) WHERE tenant_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_events_tenant
+    ON events (tenant_id) WHERE tenant_id IS NOT NULL;
+
+-- =============================================================================
+-- idempotency_keys: Prevents duplicate command execution.
+-- status: 'processing' | 'completed'
+-- result: JSON-serialized command result (stored on completion)
+-- ttl_seconds: key expires after this many seconds from created_at
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    idempotency_key     VARCHAR(255) PRIMARY KEY,
+    status              VARCHAR(20) NOT NULL DEFAULT 'processing'
+                            CHECK (status IN ('processing', 'completed')),
+    result              TEXT,
+    ttl_seconds         INTEGER NOT NULL DEFAULT 86400,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expiry
+    ON idempotency_keys (created_at, ttl_seconds);
+
+-- =============================================================================
+-- erasure_requests: GDPR Right-to-Erasure audit trail.
+-- affected_stream_ids: JSON array of stream UUIDs containing PII for this applicant.
+-- status: 'pending' | 'applied'
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS erasure_requests (
+    erasure_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    applicant_id        UUID NOT NULL,
+    requested_by        VARCHAR(255) NOT NULL,
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                            CHECK (status IN ('pending', 'applied')),
+    affected_stream_ids JSONB NOT NULL DEFAULT '[]',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    applied_at          TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_applicant
+    ON erasure_requests (applicant_id);
+
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_status
+    ON erasure_requests (status) WHERE status = 'pending';

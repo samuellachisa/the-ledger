@@ -53,6 +53,7 @@ class ProjectionDaemon:
         self._running = False
         self._last_positions: dict[str, int] = {}
         self._latest_global_position: int = 0
+        self._batch_done = asyncio.Event()
 
     def register(self, projection_name: str, handler: ProjectionHandler) -> None:
         """Register a projection handler."""
@@ -61,13 +62,23 @@ class ProjectionDaemon:
     async def start(self) -> None:
         """Start the daemon as a background task."""
         self._running = True
+        self._batch_done.set()  # not in a batch yet
         await self._load_checkpoints()
         self._task = asyncio.create_task(self._run_loop(), name="ProjectionDaemon")
         logger.info("ProjectionDaemon started with projections: %s", list(self._handlers.keys()))
 
-    async def stop(self) -> None:
-        """Gracefully stop the daemon."""
+    async def stop(self, drain_timeout_seconds: float = 5.0) -> None:
+        """
+        Gracefully stop the daemon.
+
+        Sets _running=False to prevent new batches, then waits up to
+        drain_timeout_seconds for the current batch to finish before cancelling.
+        """
         self._running = False
+        try:
+            await asyncio.wait_for(self._batch_done.wait(), timeout=drain_timeout_seconds)
+        except asyncio.TimeoutError:
+            logger.warning("ProjectionDaemon drain timed out after %.1fs", drain_timeout_seconds)
         if self._task:
             self._task.cancel()
             try:
@@ -179,22 +190,26 @@ class ProjectionDaemon:
         if not self._handlers:
             return
 
-        min_position = min(self._last_positions.get(name, 0) for name in self._handlers)
+        self._batch_done.clear()
+        try:
+            min_position = min(self._last_positions.get(name, 0) for name in self._handlers)
 
-        events = await self._store.load_all(after_position=min_position, limit=BATCH_SIZE)
-        if not events:
-            return
+            events = await self._store.load_all(after_position=min_position, limit=BATCH_SIZE)
+            if not events:
+                return
 
-        for projection_name, handler in self._handlers.items():
-            checkpoint = self._last_positions.get(projection_name, 0)
-            relevant = [e for e in events if e.global_position > checkpoint]
+            for projection_name, handler in self._handlers.items():
+                checkpoint = self._last_positions.get(projection_name, 0)
+                relevant = [e for e in events if e.global_position > checkpoint]
 
-            for event in relevant:
-                await self._process_event_with_retry(projection_name, handler, event)
+                for event in relevant:
+                    await self._process_event_with_retry(projection_name, handler, event)
 
-        # Update latest known position
-        if events:
-            self._latest_global_position = events[-1].global_position
+            # Update latest known position
+            if events:
+                self._latest_global_position = events[-1].global_position
+        finally:
+            self._batch_done.set()
 
     async def _process_event_with_retry(
         self,

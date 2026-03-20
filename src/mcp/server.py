@@ -63,6 +63,8 @@ from src.auth.tokens import TokenStore, AuthError
 from src.ratelimit.limiter import RateLimiter, RateLimitExceededError
 from src.dead_letter.queue import DeadLetterQueue
 from src.observability.metrics import get_metrics
+from src.idempotency.store import IdempotencyStore
+from src.erasure.handler import ErasureHandler
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,8 @@ _reconstructor: AgentContextReconstructor | None = None
 _token_store: TokenStore | None = None
 _rate_limiter: RateLimiter | None = None
 _dead_letter: DeadLetterQueue | None = None
+_idempotency: IdempotencyStore | None = None
+_erasure: ErasureHandler | None = None
 
 
 def _get_deps():
@@ -144,6 +148,7 @@ async def list_tools() -> list[Tool]:
                     "applicant_id": {"type": "string", "format": "uuid", "description": "Applicant's unique ID"},
                     "submitted_by": {"type": "string", "description": "Agent or user submitting the application"},
                     "correlation_id": {"type": "string", "format": "uuid", "description": "Optional saga correlation ID"},
+                    "idempotency_key": {"type": "string", "description": "Optional key to deduplicate retried submissions"},
                 },
             },
         ),
@@ -313,6 +318,24 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="erase_personal_data",
+            description=(
+                "Submit a GDPR Right-to-Erasure request for an applicant. "
+                "Appends PersonalDataErased tombstone events to all affected streams "
+                "and removes PII from projections. "
+                "PRECONDITIONS: applicant_id must be a valid UUID. "
+                "ERRORS: AggregateNotFoundError if no streams found for applicant."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["applicant_id", "requested_by"],
+                "properties": {
+                    "applicant_id": {"type": "string", "format": "uuid", "description": "Applicant whose data to erase"},
+                    "requested_by": {"type": "string", "description": "DPO or officer requesting erasure"},
+                },
+            },
+        ),
     ]
 
 
@@ -324,6 +347,13 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
         await _authenticate(arguments, name)
 
         if name == "submit_application":
+            # Idempotency: if caller provides idempotency_key, deduplicate
+            idem_key = arguments.get("idempotency_key")
+            if idem_key and _idempotency:
+                existing = await _idempotency.check_and_reserve(idem_key)
+                if existing:
+                    return _ok(existing.result)
+
             app_id = await handler.handle_submit_application(SubmitApplicationCommand(
                 applicant_name=arguments["applicant_name"],
                 loan_amount=float(arguments["loan_amount"]),
@@ -332,7 +362,10 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
                 submitted_by=arguments["submitted_by"],
                 correlation_id=UUID(arguments["correlation_id"]) if arguments.get("correlation_id") else None,
             ))
-            return _ok({"application_id": str(app_id), "status": "Submitted"})
+            result = {"application_id": str(app_id), "status": "Submitted"}
+            if idem_key and _idempotency:
+                await _idempotency.complete(idem_key, result)
+            return _ok(result)
 
         elif name == "record_credit_analysis":
             await handler.handle_record_credit_analysis(RecordCreditAnalysisCommand(
@@ -414,6 +447,21 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
             new_token = await _token_store.refresh(arguments["_auth_token"])
             return _ok({"token": new_token, "status": "TokenRefreshed"})
 
+        elif name == "erase_personal_data":
+            if _erasure is None:
+                return _err("NotConfigured", "Erasure handler not initialized")
+            applicant_id = UUID(arguments["applicant_id"])
+            erasure_id = await _erasure.request_erasure(
+                applicant_id=applicant_id,
+                requested_by=arguments["requested_by"],
+            )
+            streams_processed = await _erasure.apply_erasure(erasure_id)
+            return _ok({
+                "erasure_id": str(erasure_id),
+                "streams_processed": streams_processed,
+                "status": "Erased",
+            })
+
         else:
             return _err("UnknownTool", f"Tool '{name}' not found")
 
@@ -479,11 +527,38 @@ async def read_resource(uri: str) -> GetResourceResult:
                 t0 = time.monotonic()
                 db_ok = await conn.fetchval("SELECT 1") == 1
                 latency_ms = (time.monotonic() - t0) * 1000
+
+                # Dead letter depth
+                dlq_depth = 0
+                if _dead_letter:
+                    counts = await _dead_letter.count_unresolved()
+                    dlq_depth = sum(counts.values())
+
+                # Outbox backlog
+                outbox_backlog = await conn.fetchval(
+                    "SELECT COUNT(*) FROM outbox WHERE status = 'pending'"
+                ) or 0
+
+                # Saga stuck count
+                saga_stuck = await conn.fetchval(
+                    "SELECT COUNT(*) FROM saga_instances WHERE step = 'failed'"
+                ) or 0
+
+                # Determine overall status
+                if not db_ok:
+                    overall = "critical"
+                elif dlq_depth > 100 or saga_stuck > 10 or outbox_backlog > 1000:
+                    overall = "degraded"
+                else:
+                    overall = "ok"
+
                 return GetResourceResult(contents=[
                     TextContent(type="text", text=json.dumps({
-                        "status": "ok" if db_ok else "degraded",
+                        "status": overall,
                         "db_latency_ms": round(latency_ms, 2),
-                        "projections": list(_handler._store._upcasters._upcasters.keys()) if _handler else [],
+                        "dead_letter_depth": dlq_depth,
+                        "outbox_backlog": outbox_backlog,
+                        "saga_stuck_count": saga_stuck,
                     }, default=str))
                 ])
 
@@ -625,13 +700,15 @@ async def read_resource(uri: str) -> GetResourceResult:
 # =============================================================================
 
 async def create_server(database_url: str, enable_auth: bool = False) -> None:
-    global _pool, _event_store, _handler, _reconstructor, _token_store, _rate_limiter, _dead_letter
+    global _pool, _event_store, _handler, _reconstructor, _token_store, _rate_limiter, _dead_letter, _idempotency, _erasure
 
     _pool = await asyncpg.create_pool(database_url, min_size=2, max_size=10)
     _event_store = EventStore(_pool, UpcasterRegistry())
     _handler = CommandHandler(_event_store)
     _reconstructor = AgentContextReconstructor(_event_store)
     _dead_letter = DeadLetterQueue(_pool)
+    _idempotency = IdempotencyStore(_pool)
+    _erasure = ErasureHandler(_pool, _event_store)
 
     if enable_auth:
         _token_store = TokenStore(_pool)

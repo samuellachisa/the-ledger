@@ -64,6 +64,9 @@ async def clean_tables(db_pool):
                 agent_tokens,
                 rate_limit_buckets,
                 aggregate_snapshots,
+                idempotency_keys,
+                erasure_requests,
+                schema_migration_runs,
                 events,
                 event_streams
             RESTART IDENTITY CASCADE
@@ -113,3 +116,28 @@ async def rate_limiter(db_pool):
 async def snapshot_store(db_pool):
     from src.snapshots import SnapshotStore
     return SnapshotStore(db_pool)
+
+
+@pytest_asyncio.fixture
+async def migration_runner(db_pool):
+    from src.migrations import MigrationRunner
+    from src.upcasting.registry import UpcasterRegistry
+    return MigrationRunner(db_pool, UpcasterRegistry())
+
+
+@pytest_asyncio.fixture
+async def stream_archiver(db_pool):
+    from src.archival import StreamArchiver
+    return StreamArchiver(db_pool)
+
+
+@pytest_asyncio.fixture
+async def idempotency_store(db_pool):
+    from src.idempotency import IdempotencyStore
+    return IdempotencyStore(db_pool)
+
+
+@pytest_asyncio.fixture
+async def erasure_handler(db_pool, event_store):
+    from src.erasure import ErasureHandler
+    return ErasureHandler(db_pool, event_store)
