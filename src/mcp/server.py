@@ -140,7 +140,7 @@ async def list_tools() -> list[Tool]:
             name="record_fraud_check",
             description=(
                 "Record fraud detection results for a loan application. "
-                "PRECONDITIONS: Application must be in 'AwaitingAnalysis' status. "
+                "PRECONDITIONS: Application must be in 'UnderReview' status. "
                 "ERRORS: OptimisticConcurrencyError, InvalidStateTransitionError."
             ),
             inputSchema={

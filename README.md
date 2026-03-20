@@ -149,7 +149,7 @@ submit_application
 |---|---|
 | `submit_application` | No existing application for this ID |
 | `record_credit_analysis` | Application in `Submitted` status |
-| `record_fraud_check` | Application in `AwaitingAnalysis` status |
+| `record_fraud_check` | Application in `UnderReview` status |
 | `request_compliance_check` | Application in `UnderReview` status |
 | `record_compliance_check` | ComplianceRecord exists and `InProgress` |
 | `finalize_compliance` | All required checks recorded |
