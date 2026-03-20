@@ -57,6 +57,7 @@ from src.models.events import (
     InvalidStateTransitionError,
     OptimisticConcurrencyError,
 )
+from src.dead_letter.queue import DeadLetterQueue
 
 logger = logging.getLogger(__name__)
 
@@ -158,11 +159,13 @@ class SagaManager:
         event_store: EventStore,
         handler: CommandHandler,
         config: Optional[SagaConfig] = None,
+        dead_letter: Optional[DeadLetterQueue] = None,
     ):
         self._pool = pool
         self._store = event_store
         self._handler = handler
         self._config = config or SagaConfig()
+        self._dead_letter = dead_letter
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_position: int = 0
@@ -215,6 +218,8 @@ class SagaManager:
             await self._on_fraud_check_completed(event)
         elif event.event_type == "ComplianceRecordFinalized":
             await self._on_compliance_record_finalized(event)
+        elif event.event_type == "ApplicationWithdrawn":
+            await self._on_application_withdrawn(event)
 
     # -------------------------------------------------------------------------
     # Saga step handlers
@@ -280,6 +285,13 @@ class SagaManager:
                     saga.step = SagaStep.FAILED
                     saga.retry_count = attempt + 1
                     await self._save_saga(saga)
+                    if self._dead_letter:
+                        await self._dead_letter.write(
+                            event=event, source="saga",
+                            processor_name="LoanProcessingSaga.compliance_request",
+                            retry_count=attempt + 1, error=OptimisticConcurrencyError(
+                                application_id, MAX_STEP_RETRIES, -1),
+                        )
                     logger.error(
                         "Saga %s: exhausted retries requesting compliance for %s",
                         saga.saga_id, application_id,
@@ -351,6 +363,13 @@ class SagaManager:
                     saga.step = SagaStep.FAILED
                     saga.retry_count = attempt + 1
                     await self._save_saga(saga)
+                    if self._dead_letter:
+                        await self._dead_letter.write(
+                            event=event, source="saga",
+                            processor_name="LoanProcessingSaga.finalize_compliance",
+                            retry_count=attempt + 1, error=OptimisticConcurrencyError(
+                                saga.application_id, MAX_STEP_RETRIES, -1),
+                        )
                     logger.error(
                         "Saga %s: exhausted retries finalizing compliance for %s",
                         saga.saga_id, saga.application_id,
@@ -359,6 +378,73 @@ class SagaManager:
     # -------------------------------------------------------------------------
     # Persistence
     # -------------------------------------------------------------------------
+
+    async def _on_application_withdrawn(self, event: StoredEvent) -> None:
+        """
+        ApplicationWithdrawn → cancel in-flight compliance record.
+
+        If an application is withdrawn while in ComplianceCheck, the
+        ComplianceRecord aggregate is left orphaned in InProgress state.
+        The saga cancels it by finalizing it with a cancellation note.
+        """
+        application_id = event.aggregate_id
+        saga = await self._find_saga_by_application(application_id)
+        if saga is None or saga.compliance_record_id is None:
+            return
+
+        if saga.step not in (SagaStep.COMPLIANCE_REQUESTED,):
+            return
+
+        logger.info(
+            "Saga %s: ApplicationWithdrawn for %s — cancelling compliance record %s",
+            saga.saga_id, application_id, saga.compliance_record_id,
+        )
+
+        from src.aggregates.compliance_record import ComplianceRecordAggregate
+        from src.models.events import ComplianceStatus
+
+        try:
+            comp_events = await self._store.load_stream(
+                ComplianceRecordAggregate.aggregate_type, saga.compliance_record_id
+            )
+            comp = ComplianceRecordAggregate.load(saga.compliance_record_id, comp_events)
+
+            if comp.status != ComplianceStatus.IN_PROGRESS:
+                saga.step = SagaStep.COMPLETED
+                await self._save_saga(saga)
+                return
+
+            comp.finalize(
+                officer_id=self._config.default_officer_id,
+                notes="Cancelled: application withdrawn",
+            )
+            await self._store.append(
+                aggregate_type=ComplianceRecordAggregate.aggregate_type,
+                aggregate_id=saga.compliance_record_id,
+                events=comp.pending_events,
+                expected_version=comp.version - len(comp.pending_events),
+            )
+            saga.step = SagaStep.COMPLETED
+            await self._save_saga(saga)
+            logger.info(
+                "Saga %s: compliance record %s cancelled due to withdrawal",
+                saga.saga_id, saga.compliance_record_id,
+            )
+        except Exception as e:
+            logger.error(
+                "Saga %s: failed to cancel compliance record on withdrawal: %s",
+                saga.saga_id, e, exc_info=True,
+            )
+
+    async def _find_saga_by_application(
+        self, application_id: UUID
+    ) -> Optional[LoanProcessingSaga]:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM saga_instances WHERE application_id = $1",
+                application_id,
+            )
+            return LoanProcessingSaga.from_row(row) if row else None
 
     async def _load_or_create_saga(self, application_id: UUID) -> LoanProcessingSaga:
         async with self._pool.acquire() as conn:

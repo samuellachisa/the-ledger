@@ -304,3 +304,38 @@ class LoanApplicationAggregate(AggregateRoot):
                 str(expected),
                 f"Expected status {expected}, got {self.status}"
             )
+
+    def to_snapshot(self) -> dict:
+        return {
+            "status": self.status.value if self.status else None,
+            "applicant_name": self.applicant_name,
+            "loan_amount": self.loan_amount,
+            "loan_purpose": self.loan_purpose,
+            "applicant_id": str(self.applicant_id) if self.applicant_id else None,
+            "credit_score": self.credit_score,
+            "fraud_passed": self.fraud_passed,
+            "compliance_record_id": str(self.compliance_record_id) if self.compliance_record_id else None,
+            "compliance_passed": self.compliance_passed,
+            "last_decision": self.last_decision.value if self.last_decision else None,
+            "last_confidence": self.last_confidence,
+            "agent_session_id": str(self.agent_session_id) if self.agent_session_id else None,
+        }
+
+    @classmethod
+    def from_snapshot(cls, aggregate_id: UUID, data: dict, version: int) -> "LoanApplicationAggregate":
+        from uuid import UUID as _UUID
+        inst = cls(aggregate_id)
+        inst.version = version
+        inst.status = LoanStatus(data["status"]) if data.get("status") else None
+        inst.applicant_name = data.get("applicant_name", "")
+        inst.loan_amount = data.get("loan_amount", 0.0)
+        inst.loan_purpose = data.get("loan_purpose", "")
+        inst.applicant_id = _UUID(data["applicant_id"]) if data.get("applicant_id") else None
+        inst.credit_score = data.get("credit_score")
+        inst.fraud_passed = data.get("fraud_passed")
+        inst.compliance_record_id = _UUID(data["compliance_record_id"]) if data.get("compliance_record_id") else None
+        inst.compliance_passed = data.get("compliance_passed")
+        inst.last_decision = DecisionOutcome(data["last_decision"]) if data.get("last_decision") else None
+        inst.last_confidence = data.get("last_confidence")
+        inst.agent_session_id = _UUID(data["agent_session_id"]) if data.get("agent_session_id") else None
+        return inst

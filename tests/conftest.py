@@ -60,6 +60,10 @@ async def clean_tables(db_pool):
                 agent_performance_projection,
                 application_summary_projection,
                 saga_instances,
+                dead_letter_events,
+                agent_tokens,
+                rate_limit_buckets,
+                aggregate_snapshots,
                 events,
                 event_streams
             RESTART IDENTITY CASCADE
@@ -85,3 +89,27 @@ async def handler(event_store):
 async def saga_manager(db_pool, event_store, handler):
     from src.saga import SagaManager
     return SagaManager(db_pool, event_store, handler)
+
+
+@pytest_asyncio.fixture
+async def dead_letter(db_pool):
+    from src.dead_letter import DeadLetterQueue
+    return DeadLetterQueue(db_pool)
+
+
+@pytest_asyncio.fixture
+async def token_store(db_pool):
+    from src.auth import TokenStore
+    return TokenStore(db_pool)
+
+
+@pytest_asyncio.fixture
+async def rate_limiter(db_pool):
+    from src.ratelimit import RateLimiter
+    return RateLimiter(db_pool)
+
+
+@pytest_asyncio.fixture
+async def snapshot_store(db_pool):
+    from src.snapshots import SnapshotStore
+    return SnapshotStore(db_pool)

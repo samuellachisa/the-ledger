@@ -230,3 +230,94 @@ CREATE TABLE IF NOT EXISTS saga_checkpoints (
 INSERT INTO saga_checkpoints (saga_name, last_position)
 VALUES ('LoanProcessingSaga', 0)
 ON CONFLICT (saga_name) DO NOTHING;
+
+-- =============================================================================
+-- aggregate_snapshots: Periodic state snapshots to avoid full stream replay.
+-- A snapshot captures the aggregate state at a given stream_position.
+-- On load: find latest snapshot, replay only events AFTER snapshot_version.
+--
+-- snapshot_data: serialized aggregate state (JSON)
+-- stream_position: the stream version this snapshot was taken at
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS aggregate_snapshots (
+    snapshot_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    aggregate_type  VARCHAR(100) NOT NULL,
+    aggregate_id    UUID NOT NULL,
+    stream_position INTEGER NOT NULL,
+    snapshot_data   JSONB NOT NULL,
+    schema_version  INTEGER NOT NULL DEFAULT 1,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (aggregate_type, aggregate_id, stream_position)
+);
+
+CREATE INDEX IF NOT EXISTS idx_snapshots_latest
+    ON aggregate_snapshots (aggregate_type, aggregate_id, stream_position DESC);
+
+-- =============================================================================
+-- dead_letter_events: Events that failed projection/saga processing after
+-- all retries. Stored for operator inspection and manual replay.
+--
+-- source: 'projection' | 'saga'
+-- processor_name: projection name or saga name
+-- error_type / error_message: last failure details
+-- resolved_at: set when operator marks the entry resolved
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS dead_letter_events (
+    dead_letter_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id        UUID NOT NULL,
+    global_position BIGINT NOT NULL,
+    aggregate_type  VARCHAR(100) NOT NULL,
+    event_type      VARCHAR(200) NOT NULL,
+    payload         JSONB NOT NULL,
+    source          VARCHAR(50) NOT NULL CHECK (source IN ('projection', 'saga')),
+    processor_name  VARCHAR(100) NOT NULL,
+    retry_count     INTEGER NOT NULL DEFAULT 0,
+    error_type      VARCHAR(200),
+    error_message   TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at     TIMESTAMPTZ,
+    resolved_by     VARCHAR(100)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dead_letter_unresolved
+    ON dead_letter_events (source, processor_name, created_at)
+    WHERE resolved_at IS NULL;
+
+-- =============================================================================
+-- agent_tokens: Issued session tokens for MCP agent authentication.
+-- token_hash: SHA-256 of the raw bearer token (never store plaintext).
+-- agent_id: the verified identity this token belongs to.
+-- roles: JSON array of role strings e.g. ["decision_agent", "read_only"]
+-- expires_at: tokens are short-lived (default 24h)
+-- revoked_at: set on explicit revocation
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS agent_tokens (
+    token_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_hash      VARCHAR(64) NOT NULL UNIQUE,  -- SHA-256 hex
+    agent_id        VARCHAR(100) NOT NULL,
+    roles           JSONB NOT NULL DEFAULT '[]',
+    issued_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at      TIMESTAMPTZ NOT NULL,
+    revoked_at      TIMESTAMPTZ,
+    last_used_at    TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_tokens_hash
+    ON agent_tokens (token_hash)
+    WHERE revoked_at IS NULL;
+
+-- =============================================================================
+-- rate_limit_buckets: Token-bucket rate limiting per agent_id + action.
+-- tokens: current token count (float stored as numeric)
+-- last_refill: timestamp of last refill calculation
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+    bucket_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_id        VARCHAR(100) NOT NULL,
+    action          VARCHAR(100) NOT NULL,
+    tokens          NUMERIC(10, 4) NOT NULL,
+    capacity        NUMERIC(10, 4) NOT NULL,
+    refill_rate     NUMERIC(10, 4) NOT NULL,  -- tokens per second
+    last_refill     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (agent_id, action)
+);

@@ -19,6 +19,7 @@ from typing import Callable, Awaitable
 import asyncpg
 
 from src.event_store import EventStore, StoredEvent
+from src.dead_letter.queue import DeadLetterQueue
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,10 @@ class ProjectionDaemon:
         await daemon.stop()
     """
 
-    def __init__(self, pool: asyncpg.Pool, event_store: EventStore):
+    def __init__(self, pool: asyncpg.Pool, event_store: EventStore, dead_letter: DeadLetterQueue | None = None):
         self._pool = pool
         self._store = event_store
+        self._dead_letter = dead_letter
         self._handlers: dict[str, ProjectionHandler] = {}
         self._task: asyncio.Task | None = None
         self._running = False
@@ -230,6 +232,18 @@ class ProjectionDaemon:
                         projection_name, event.event_id, MAX_RETRIES_PER_EVENT, e,
                         exc_info=True
                     )
+                    # Write to dead letter queue before skipping
+                    if self._dead_letter:
+                        try:
+                            await self._dead_letter.write(
+                                event=event,
+                                source="projection",
+                                processor_name=projection_name,
+                                retry_count=MAX_RETRIES_PER_EVENT,
+                                error=e,
+                            )
+                        except Exception as dlq_err:
+                            logger.error("Failed to write dead letter: %s", dlq_err)
                     # Skip this event — advance checkpoint to avoid blocking
                     async with self._pool.acquire() as conn:
                         await conn.execute(

@@ -60,3 +60,19 @@ class AggregateRoot:
         events = list(self.pending_events)
         self.pending_events = []
         return events
+
+    def to_snapshot(self) -> dict:
+        """
+        Serialize aggregate state for snapshotting.
+        Override in subclasses to include domain-specific fields.
+        Base implementation returns empty dict (subclasses must override).
+        """
+        return {}
+
+    @classmethod
+    def from_snapshot(cls, aggregate_id: UUID, data: dict, version: int) -> "AggregateRoot":
+        """
+        Restore aggregate from snapshot data.
+        Override in subclasses. Base raises NotImplementedError.
+        """
+        raise NotImplementedError(f"{cls.__name__} does not implement from_snapshot")

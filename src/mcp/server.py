@@ -59,6 +59,9 @@ from src.projections.agent_performance import get_agent_performance, list_agent_
 from src.projections.application_summary import get_application_summary, list_applications
 from src.projections.compliance_audit import get_compliance_history, get_state_at
 from src.upcasting.registry import UpcasterRegistry
+from src.auth.tokens import TokenStore, AuthError
+from src.ratelimit.limiter import RateLimiter, RateLimitExceededError
+from src.dead_letter.queue import DeadLetterQueue
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +72,38 @@ _pool: asyncpg.Pool | None = None
 _event_store: EventStore | None = None
 _handler: CommandHandler | None = None
 _reconstructor: AgentContextReconstructor | None = None
+_token_store: TokenStore | None = None
+_rate_limiter: RateLimiter | None = None
+_dead_letter: DeadLetterQueue | None = None
 
 
 def _get_deps():
     assert _pool and _event_store and _handler and _reconstructor, "Server not initialized"
     return _pool, _event_store, _handler, _reconstructor
+
+
+def _get_auth_token(arguments: dict) -> str | None:
+    """Extract bearer token from tool arguments."""
+    return arguments.get("_auth_token")
+
+
+async def _authenticate(arguments: dict, tool_name: str) -> None:
+    """
+    Verify auth token and check rate limit if auth is enabled.
+    No-ops if _token_store is not initialized (backward compatible).
+    """
+    if _token_store is None:
+        return  # Auth not enabled
+
+    raw_token = _get_auth_token(arguments)
+    if not raw_token:
+        raise AuthError("Missing _auth_token in tool arguments", "MissingToken")
+
+    identity = await _token_store.verify(raw_token)
+    _token_store.require(identity, tool_name)
+
+    if _rate_limiter is not None:
+        await _rate_limiter.consume(agent_id=identity.agent_id, action=tool_name)
 
 
 def _ok(data: dict | list | str) -> CallToolResult:
@@ -274,6 +304,8 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
     pool, event_store, handler, reconstructor = _get_deps()
 
     try:
+        await _authenticate(arguments, name)
+
         if name == "submit_application":
             app_id = await handler.handle_submit_application(SubmitApplicationCommand(
                 applicant_name=arguments["applicant_name"],
@@ -372,6 +404,12 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
         })
     except AggregateNotFoundError as e:
         return _err("AggregateNotFoundError", str(e))
+    except AuthError as e:
+        return _err(e.code, str(e))
+    except RateLimitExceededError as e:
+        return _err("RateLimitExceeded", str(e), {
+            "retry_after_seconds": e.retry_after_seconds
+        })
     except Exception as e:
         logger.exception("Unexpected error in tool %s", name)
         return _err("InternalError", str(e))
@@ -391,6 +429,7 @@ async def list_resources() -> list[Resource]:
         Resource(uri="ledger://applications/{id}/compliance", name="Compliance History", mimeType="application/json"),
         Resource(uri="ledger://agents/performance", name="Agent Performance", mimeType="application/json"),
         Resource(uri="ledger://integrity/{id}", name="Integrity Check", mimeType="application/json"),
+        Resource(uri="ledger://dead-letters", name="Dead Letter Queue", mimeType="application/json"),
     ]
 
 
@@ -473,6 +512,19 @@ async def read_resource(uri: str) -> GetResourceResult:
                     TextContent(type="text", text=json.dumps(result, default=str))
                 ])
 
+            # ledger://dead-letters
+            elif uri == "ledger://dead-letters":
+                if _dead_letter:
+                    data = await _dead_letter.list_unresolved()
+                    counts = await _dead_letter.count_unresolved()
+                else:
+                    data, counts = [], {}
+                return GetResourceResult(contents=[
+                    TextContent(type="text", text=json.dumps(
+                        {"unresolved": data, "counts_by_processor": counts}, default=str
+                    ))
+                ])
+
             else:
                 return GetResourceResult(contents=[
                     TextContent(type="text", text=json.dumps({"error": f"Unknown resource: {uri}"}))
@@ -489,14 +541,23 @@ async def read_resource(uri: str) -> GetResourceResult:
 # Server initialization
 # =============================================================================
 
-async def create_server(database_url: str) -> None:
-    global _pool, _event_store, _handler, _reconstructor
+async def create_server(database_url: str, enable_auth: bool = False) -> None:
+    global _pool, _event_store, _handler, _reconstructor, _token_store, _rate_limiter, _dead_letter
 
     _pool = await asyncpg.create_pool(database_url, min_size=2, max_size=10)
     _event_store = EventStore(_pool, UpcasterRegistry())
     _handler = CommandHandler(_event_store)
     _reconstructor = AgentContextReconstructor(_event_store)
-    logger.info("MCP Server initialized with database: %s", database_url.split("@")[-1])
+    _dead_letter = DeadLetterQueue(_pool)
+
+    if enable_auth:
+        _token_store = TokenStore(_pool)
+        _rate_limiter = RateLimiter(_pool)
+
+    logger.info(
+        "MCP Server initialized (auth=%s, rate_limiting=%s)",
+        enable_auth, enable_auth,
+    )
 
 
 async def main():

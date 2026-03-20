@@ -39,6 +39,7 @@ from src.models.events import (
     OptimisticConcurrencyError,
 )
 from src.upcasting.registry import UpcasterRegistry
+from src.snapshots.store import SnapshotStore, SNAPSHOT_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,7 @@ class EventStore:
     def __init__(self, pool: asyncpg.Pool, upcaster_registry: Optional[UpcasterRegistry] = None):
         self._pool = pool
         self._upcasters = upcaster_registry or UpcasterRegistry()
+        self._snapshots = SnapshotStore(pool)
 
     # -------------------------------------------------------------------------
     # Write path
@@ -207,6 +209,25 @@ class EventStore:
 
                 return new_version
 
+    async def maybe_snapshot(
+        self,
+        aggregate_type: str,
+        aggregate_id: UUID,
+        version: int,
+        state: dict,
+    ) -> None:
+        """
+        Write a snapshot if the version crosses a threshold boundary.
+        Call this from command handlers after a successful append.
+
+        Example:
+            new_version = await store.append(...)
+            await store.maybe_snapshot(agg_type, agg_id, new_version, agg.to_snapshot())
+        """
+        if await self._snapshots.should_snapshot(aggregate_type, aggregate_id, version):
+            await self._snapshots.save(aggregate_type, aggregate_id, version, state)
+            await self._snapshots.delete_old_snapshots(aggregate_type, aggregate_id)
+
     # -------------------------------------------------------------------------
     # Read path
     # -------------------------------------------------------------------------
@@ -221,15 +242,30 @@ class EventStore:
         """
         Load and upcast all events for an aggregate stream.
 
+        Uses snapshots when available: finds the latest snapshot and replays
+        only events after it, reducing load from O(all events) to O(recent events).
+
         Args:
             aggregate_type: Aggregate type name
             aggregate_id: Aggregate identity
             from_version: Start from this stream position (exclusive). Default 0 = all.
+                          Overridden by snapshot position when snapshot is newer.
             to_version: End at this stream position (inclusive). Default = all.
 
         Returns:
             List of upcasted DomainEvent instances in stream order.
         """
+        # Use snapshot to skip replaying old events (unless caller specifies from_version)
+        effective_from = from_version
+        if from_version == 0 and to_version is None:
+            snapshot = await self._snapshots.load(aggregate_type, aggregate_id)
+            if snapshot:
+                effective_from = snapshot["stream_position"]
+                logger.debug(
+                    "Snapshot hit for %s/%s at version %d",
+                    aggregate_type, aggregate_id, effective_from,
+                )
+
         async with self._pool.acquire() as conn:
             query = """
                 SELECT e.*
@@ -239,7 +275,7 @@ class EventStore:
                   AND s.aggregate_id = $2
                   AND e.stream_position > $3
             """
-            args: list[Any] = [aggregate_type, aggregate_id, from_version]
+            args: list[Any] = [aggregate_type, aggregate_id, effective_from]
 
             if to_version is not None:
                 query += f" AND e.stream_position <= ${len(args) + 1}"
