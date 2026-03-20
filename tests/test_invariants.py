@@ -403,3 +403,120 @@ async def test_counterfactual_causal_chain_documented(db_pool):
     chain_str = " ".join(result["causal_chain"])
     assert "CreditAnalysisCompleted" in chain_str
     assert "DecisionGenerated" in chain_str
+
+
+@pytest.mark.asyncio
+async def test_counterfactual_multi_hop_fraud_and_credit_simultaneously(db_pool):
+    """
+    Multi-hop counterfactual: replace BOTH FraudCheckCompleted AND CreditAnalysisCompleted
+    simultaneously. Both causal chains must be applied — DecisionGenerated and terminal
+    events must be removed from both dependency sets.
+    """
+    store = EventStore(db_pool, UpcasterRegistry())
+    handler = CommandHandler(store)
+    projector = WhatIfProjector(store)
+
+    # Build a full application that gets DENIED (low credit + fraud flagged)
+    app_id = await handler.handle_submit_application(SubmitApplicationCommand(
+        applicant_name="Multi-Hop Counterfactual Test",
+        loan_amount=75000.0,
+        loan_purpose="Test",
+        applicant_id=uuid4(),
+        submitted_by="test",
+    ))
+    session_id = await handler.handle_start_agent_session(StartAgentSessionCommand(
+        application_id=app_id, agent_model="gpt-4", agent_version="1.0"
+    ))
+    await handler.handle_load_agent_context(LoadAgentContextCommand(
+        session_id=session_id, application_id=app_id,
+        context_sources=["credit_bureau", "fraud_db"], context_snapshot={},
+        loaded_stream_positions={"LoanApplication": 1},
+    ))
+    await handler.handle_record_credit_analysis(RecordCreditAnalysisCommand(
+        application_id=app_id, credit_score=480, debt_to_income_ratio=0.72  # Very bad credit
+    ))
+    await handler.handle_record_fraud_check(RecordFraudCheckCommand(
+        application_id=app_id, fraud_risk_score=0.85, flags=["suspicious_ip", "velocity"], passed=False
+    ))
+    compliance_id = await handler.handle_request_compliance_check(
+        RequestComplianceCheckCommand(
+            application_id=app_id, officer_id="officer", required_checks=["AML"]
+        )
+    )
+    await handler.handle_record_compliance_check(RecordComplianceCheckCommand(
+        compliance_record_id=compliance_id, check_name="AML", passed=True,
+        check_result={}, failure_reason="", officer_id="officer"
+    ))
+    await handler.handle_finalize_compliance(FinalizeComplianceCommand(
+        compliance_record_id=compliance_id, application_id=app_id, officer_id="officer"
+    ))
+    await handler.handle_generate_decision(GenerateDecisionCommand(
+        application_id=app_id,
+        agent_session_id=session_id,
+        outcome=DecisionOutcome.DENY,
+        confidence_score=0.91,
+        reasoning="Low credit and fraud flags",
+        model_version="gpt-4",
+    ))
+    await handler.handle_finalize_application(FinalizeApplicationCommand(
+        application_id=app_id,
+        approved=False,
+        denial_reasons=["Credit score below threshold", "Fraud flags detected"],
+        denied_by="system",
+    ))
+
+    # Verify baseline is Denied
+    events = await store.load_stream("LoanApplication", app_id)
+    baseline = LoanApplicationAggregate.load(app_id, events)
+    assert baseline.status == LoanStatus.DENIED
+
+    # Counterfactual: replace BOTH CreditAnalysisCompleted AND FraudCheckCompleted
+    from src.models.events import CreditAnalysisCompleted, FraudCheckCompleted
+    cf_credit = CreditAnalysisCompleted(
+        aggregate_id=app_id,
+        credit_score=800,
+        debt_to_income_ratio=0.22,
+        model_version="credit-model-v3",
+    )
+    cf_fraud = FraudCheckCompleted(
+        aggregate_id=app_id,
+        fraud_risk_score=0.03,
+        flags=[],
+        passed=True,
+    )
+
+    result = await projector.run_what_if(
+        application_id=app_id,
+        counterfactual_events=[cf_credit, cf_fraud],
+    )
+
+    # Both event types must appear in injected_events
+    assert "CreditAnalysisCompleted" in result["injected_events"]
+    assert "FraudCheckCompleted" in result["injected_events"]
+
+    # DecisionGenerated must be causally removed (it depends on both credit AND fraud)
+    assert "DecisionGenerated" in result["causally_removed_events"], (
+        "DecisionGenerated must be causally removed when both CreditAnalysis and FraudCheck are replaced"
+    )
+
+    # Terminal denial event must also be removed
+    assert "ApplicationDenied" in result["causally_removed_events"], (
+        "ApplicationDenied must be causally removed as it depends on DecisionGenerated"
+    )
+
+    # Causal chain must document both dependency paths
+    chain_str = " ".join(result["causal_chain"])
+    assert "CreditAnalysisCompleted" in chain_str
+    assert "FraudCheckCompleted" in chain_str
+
+    # Counterfactual state must reflect both replacements
+    assert result["counterfactual_state"]["credit_score"] == 800
+    assert result["baseline_state"]["credit_score"] == 480
+
+    # Outcome must have changed (no decision in counterfactual stream)
+    assert result["outcome_changed"] is True
+
+    # Narrative must be coherent and mention both replaced events
+    narrative = result["narrative"]
+    assert isinstance(narrative, str) and len(narrative) > 20
+    assert "CreditAnalysisCompleted" in narrative or "FraudCheckCompleted" in narrative

@@ -68,6 +68,67 @@ CAUSAL_DEPENDENCIES: dict[str, set[str]] = {
 }
 
 
+def generate_narrative(result: dict) -> str:
+    """
+    Produce a human-readable explanation of a counterfactual what-if result.
+
+    Describes: what was changed, which downstream events were causally invalidated,
+    how the outcome differs (or doesn't), and what the new state reflects.
+    """
+    injected = result.get("injected_events", [])
+    removed = result.get("causally_removed_events", [])
+    baseline = result.get("baseline_outcome", "unknown")
+    counterfactual = result.get("counterfactual_outcome", "unknown")
+    outcome_changed = result.get("outcome_changed", False)
+    b_state = result.get("baseline_state", {})
+    cf_state = result.get("counterfactual_state", {})
+
+    parts: list[str] = []
+
+    # What was changed
+    if injected:
+        parts.append(
+            f"Counterfactual premise: replaced {', '.join(injected)}."
+        )
+
+    # Highlight key state differences
+    diffs: list[str] = []
+    if b_state.get("credit_score") != cf_state.get("credit_score"):
+        diffs.append(
+            f"credit score changed from {b_state.get('credit_score')} "
+            f"to {cf_state.get('credit_score')}"
+        )
+    if b_state.get("compliance_passed") != cf_state.get("compliance_passed"):
+        diffs.append(
+            f"compliance result changed from {b_state.get('compliance_passed')} "
+            f"to {cf_state.get('compliance_passed')}"
+        )
+    if diffs:
+        parts.append("Key input changes: " + "; ".join(diffs) + ".")
+
+    # Causal invalidation
+    if removed:
+        parts.append(
+            f"Causally invalidated and removed from the counterfactual stream: "
+            f"{', '.join(removed)}. "
+            f"These events depended on the replaced inputs and are no longer valid."
+        )
+
+    # Outcome comparison
+    if outcome_changed:
+        parts.append(
+            f"Outcome changed: the application would have reached '{counterfactual}' "
+            f"instead of '{baseline}'."
+        )
+    else:
+        parts.append(
+            f"Outcome unchanged: the application still reaches '{baseline}' "
+            f"even with the counterfactual inputs."
+        )
+
+    return " ".join(parts)
+
+
 class WhatIfProjector:
     def __init__(self, event_store: EventStore):
         self._store = event_store
@@ -133,7 +194,7 @@ class WhatIfProjector:
             "loan_amount": cf_aggregate.loan_amount,
         }
 
-        return {
+        result = {
             "application_id": str(application_id),
             "baseline_outcome": baseline_state["status"],
             "counterfactual_outcome": cf_state["status"],
@@ -146,6 +207,8 @@ class WhatIfProjector:
             "counterfactual_event_count": len(cf_events),
             "causal_chain": causal_chain,
         }
+        result["narrative"] = generate_narrative(result)
+        return result
 
     def _build_counterfactual_stream(
         self,
