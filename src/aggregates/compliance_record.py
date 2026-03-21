@@ -107,6 +107,27 @@ class ComplianceRecordAggregate(AggregateRoot):
         self.status = event.overall_status
 
     # -------------------------------------------------------------------------
+    # Reconstruction
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def load(cls, aggregate_id: UUID, events: list) -> "ComplianceRecordAggregate":
+        """Reconstruct compliance state by replaying *events* in order.
+
+        Accepts the list returned by ``EventStore.load_stream()``.  After
+        replay ``passed_checks``, ``failed_checks``, and ``status`` reflect
+        the current state of the record.  ``original_version`` is set so it
+        can be passed directly as ``expected_version`` to
+        ``EventStore.append()``.
+        """
+        instance = cls(aggregate_id)
+        for event in events:
+            instance.apply(event)
+        instance.original_version = instance.version
+        instance.pending_events = []
+        return instance
+
+    # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
 

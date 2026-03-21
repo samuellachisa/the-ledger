@@ -241,3 +241,26 @@ class AgentSessionAggregate(AggregateRoot):
     def when_AgentSessionResumed(self, event: AgentSessionResumed) -> None:
         self.status = AgentSessionStatus.PROCESSING
         self.crash_event_id = event.crash_event_id
+
+    # -------------------------------------------------------------------------
+    # Reconstruction
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def load(cls, aggregate_id: UUID, events: list) -> "AgentSessionAggregate":
+        """Reconstruct session state by replaying *events* in order.
+
+        Accepts the list returned by ``EventStore.load_stream()``.  After
+        replay ``instance.version`` equals the number of events applied and
+        ``instance.original_version`` is set to that same value so it can be
+        passed directly as ``expected_version`` to ``EventStore.append()``.
+        Gas Town checkpoints (``loaded_stream_positions``) are restored as
+        part of normal event replay via ``when_AgentContextLoaded`` and
+        ``when_AgentCreditAnalysisObserved``.
+        """
+        instance = cls(aggregate_id)
+        for event in events:
+            instance.apply(event)
+        instance.original_version = instance.version
+        instance.pending_events = []
+        return instance

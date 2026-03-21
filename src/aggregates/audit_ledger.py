@@ -112,6 +112,28 @@ class AuditLedgerAggregate(AggregateRoot):
         pass  # Integrity checks are recorded but don't change ledger state
 
     # -------------------------------------------------------------------------
+    # Reconstruction
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def load(cls, aggregate_id: UUID, events: list) -> "AuditLedgerAggregate":
+        """Reconstruct ledger state by replaying *events* in order.
+
+        Accepts the list returned by ``EventStore.load_stream()``.  After
+        replay the full hash chain is restored in ``entries`` and
+        ``last_chain_hash`` reflects the tip of the chain, ready for the
+        next ``record_entry()`` call.  ``original_version`` is set so it
+        can be passed directly as ``expected_version`` to
+        ``EventStore.append()``.
+        """
+        instance = cls(aggregate_id)
+        for event in events:
+            instance.apply(event)
+        instance.original_version = instance.version
+        instance.pending_events = []
+        return instance
+
+    # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
 
