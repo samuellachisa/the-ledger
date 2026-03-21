@@ -37,6 +37,7 @@ from src.models.events import (
     DomainEvent,
     EVENT_REGISTRY,
     OptimisticConcurrencyError,
+    StreamMetadata,
 )
 from src.upcasting.registry import UpcasterRegistry
 from src.snapshots.store import SnapshotStore, SNAPSHOT_THRESHOLD
@@ -139,6 +140,8 @@ class EventStore:
         events: list[DomainEvent],
         expected_version: int,
         encrypt_fields: list[str] | None = None,
+        correlation_id: UUID | None = None,
+        causation_id: UUID | None = None,
     ) -> int:
         """
         Atomically append events to a stream with OCC.
@@ -152,6 +155,10 @@ class EventStore:
             encrypt_fields: Optional list of payload field names to encrypt with
                             AES-256-GCM before writing. Requires FIELD_ENCRYPTION_KEY
                             env var. No-op if key is not set.
+            correlation_id: Top-level saga/request ID. Stamped onto every event
+                            that does not already carry one.
+            causation_id: The command or event that triggered this append. Stamped
+                          onto every event that does not already carry one.
 
         Returns:
             New stream version after append.
@@ -256,6 +263,12 @@ class EventStore:
                         "occurred_at": event.occurred_at.isoformat(),
                     }
 
+                    # Resolve correlation/causation: prefer the value already on the
+                    # event (set by the aggregate), fall back to the caller-supplied
+                    # values passed into append().
+                    effective_correlation = event.correlation_id or correlation_id
+                    effective_causation = event.causation_id or causation_id
+
                     event_row = await conn.fetchrow(
                         """
                         INSERT INTO events (
@@ -274,8 +287,8 @@ class EventStore:
                         position,
                         payload,
                         metadata,
-                        event.causation_id,
-                        event.correlation_id,
+                        effective_causation,
+                        effective_correlation,
                     )
 
                     # Step 3: Write to outbox in same transaction
@@ -481,6 +494,84 @@ class EventStore:
                 root_event_id, max_depth,
             )
         return [StoredEvent(row) for row in rows]
+
+    async def archive_stream(
+        self,
+        aggregate_type: str,
+        aggregate_id: UUID,
+    ) -> bool:
+        """
+        Mark a single stream as archived by setting archived_at = NOW().
+
+        This is a metadata-only operation — events are never deleted.
+        Returns True if the stream was found and newly archived, False if it
+        was already archived or does not exist.
+
+        Runs in its own transaction (no OCC needed — archival is idempotent).
+        """
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                result = await conn.execute(
+                    """
+                    UPDATE event_streams
+                    SET archived_at = NOW(), updated_at = NOW()
+                    WHERE aggregate_type = $1
+                      AND aggregate_id = $2
+                      AND archived_at IS NULL
+                    """,
+                    aggregate_type,
+                    aggregate_id,
+                )
+        archived = result.split()[-1] != "0"
+        if archived:
+            logger.info("Archived stream %s/%s", aggregate_type, aggregate_id)
+        return archived
+
+    async def get_stream_metadata(
+        self,
+        aggregate_type: str,
+        aggregate_id: UUID,
+    ) -> StreamMetadata | None:
+        """
+        Return metadata for a stream without loading its events.
+
+        Returns a StreamMetadata instance, or None if the stream does not exist.
+        """
+        async with self._read_pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT
+                    s.stream_id,
+                    s.aggregate_type,
+                    s.aggregate_id,
+                    s.current_version,
+                    s.created_at,
+                    s.updated_at,
+                    s.archived_at,
+                    s.tenant_id,
+                    COUNT(e.event_id) AS event_count
+                FROM event_streams s
+                LEFT JOIN events e ON e.stream_id = s.stream_id
+                WHERE s.aggregate_type = $1
+                  AND s.aggregate_id = $2
+                GROUP BY s.stream_id
+                """,
+                aggregate_type,
+                aggregate_id,
+            )
+        if row is None:
+            return None
+        return StreamMetadata(
+            stream_id=row["stream_id"],
+            aggregate_type=row["aggregate_type"],
+            aggregate_id=row["aggregate_id"],
+            current_version=row["current_version"],
+            event_count=row["event_count"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            archived_at=row["archived_at"],
+            tenant_id=row["tenant_id"],
+        )
 
     async def load_filtered(
         self,

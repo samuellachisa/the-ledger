@@ -122,6 +122,28 @@ class StreamArchiver:
         logger.info("Archived %d streams (before_date=%s)", count, before_date)
         return count
 
+    async def archive_stream(self, aggregate_type: str, aggregate_id: UUID) -> bool:
+        """
+        Archive a single stream by aggregate_type + aggregate_id.
+        Returns True if the stream was found and newly archived.
+        """
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE event_streams
+                SET archived_at = NOW(), updated_at = NOW()
+                WHERE aggregate_type = $1
+                  AND aggregate_id = $2
+                  AND archived_at IS NULL
+                """,
+                aggregate_type,
+                aggregate_id,
+            )
+        archived = result.split()[-1] != "0"
+        if archived:
+            logger.info("Archived stream %s/%s", aggregate_type, aggregate_id)
+        return archived
+
     async def restore_stream(self, aggregate_id: UUID) -> bool:
         """
         Unmark a stream as archived. Returns True if the stream was found and restored.

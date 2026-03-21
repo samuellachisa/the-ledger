@@ -19,7 +19,22 @@ from pydantic import BaseModel, Field
 # Exceptions
 # =============================================================================
 
-class OptimisticConcurrencyError(Exception):
+class DomainError(Exception):
+    """
+    Base class for all domain-layer errors.
+
+    Catching DomainError lets callers handle any domain failure uniformly
+    (e.g. MCP error serialisation, saga compensation) without needing to
+    enumerate every concrete subclass.  Each subclass still carries its own
+    structured attributes for fine-grained handling where needed.
+    """
+
+    def to_dict(self) -> dict:
+        """Serialise to a JSON-safe dict.  Subclasses should override."""
+        return {"error": type(self).__name__, "message": str(self)}
+
+
+class OptimisticConcurrencyError(DomainError):
     """
     Raised when an append is attempted with an expected_version that does not
     match the current stream version. The caller must reload the aggregate
@@ -46,36 +61,72 @@ class OptimisticConcurrencyError(Exception):
         }
 
 
-class AggregateNotFoundError(Exception):
+class AggregateNotFoundError(DomainError):
     def __init__(self, aggregate_type: str, aggregate_id: UUID):
         self.aggregate_type = aggregate_type
         self.aggregate_id = aggregate_id
         super().__init__(f"{aggregate_type} {aggregate_id} not found")
 
+    def to_dict(self) -> dict:
+        return {
+            "error": "AggregateNotFoundError",
+            "aggregate_type": self.aggregate_type,
+            "aggregate_id": str(self.aggregate_id),
+        }
 
-class InvalidStateTransitionError(Exception):
+
+class InvalidStateTransitionError(DomainError):
     def __init__(self, aggregate_type: str, from_state: str, to_state: str, reason: str = ""):
+        self.aggregate_type = aggregate_type
         self.from_state = from_state
         self.to_state = to_state
+        self.reason = reason
         super().__init__(
             f"{aggregate_type}: invalid transition {from_state} → {to_state}. {reason}"
         )
 
+    def to_dict(self) -> dict:
+        return {
+            "error": "InvalidStateTransitionError",
+            "aggregate_type": self.aggregate_type,
+            "from_state": self.from_state,
+            "to_state": self.to_state,
+            "reason": self.reason,
+        }
 
-class BusinessRuleViolationError(Exception):
+
+class BusinessRuleViolationError(DomainError):
     def __init__(self, rule: str, detail: str = ""):
         self.rule = rule
+        self.detail = detail
         super().__init__(f"Business rule violated: {rule}. {detail}")
 
+    def to_dict(self) -> dict:
+        return {
+            "error": "BusinessRuleViolationError",
+            "rule": self.rule,
+            "detail": self.detail,
+        }
 
-class IntegrityError(Exception):
+
+class IntegrityError(DomainError):
     """Raised when hash chain verification fails."""
     def __init__(self, sequence_number: int, expected_hash: str, actual_hash: str):
         self.sequence_number = sequence_number
+        self.expected_hash = expected_hash
+        self.actual_hash = actual_hash
         super().__init__(
             f"Hash chain broken at sequence {sequence_number}: "
             f"expected {expected_hash[:16]}..., got {actual_hash[:16]}..."
         )
+
+    def to_dict(self) -> dict:
+        return {
+            "error": "IntegrityError",
+            "sequence_number": self.sequence_number,
+            "expected_hash": self.expected_hash,
+            "actual_hash": self.actual_hash,
+        }
 
 
 # =============================================================================
@@ -116,6 +167,45 @@ class ComplianceStatus(str, Enum):
     PASSED = "Passed"
     FAILED = "Failed"
     WAIVED = "Waived"
+
+
+# =============================================================================
+# Stream Metadata
+# =============================================================================
+
+class StreamMetadata(BaseModel):
+    """
+    Typed representation of an event stream's identity and current state.
+
+    Returned by EventStore.get_stream_metadata() so callers get a structured
+    object instead of a raw dict — field access is validated and IDE-friendly.
+
+    Fields
+    ------
+    stream_id       Internal surrogate key (UUID) for the stream row.
+    aggregate_type  e.g. 'LoanApplication', 'AgentSession'.
+    aggregate_id    Business identity UUID of the aggregate.
+    current_version Last appended stream position (0 = no events yet).
+    event_count     Total number of events stored in this stream.
+    created_at      When the stream was first created.
+    updated_at      When the stream was last written to.
+    archived_at     Set when the stream has been archived; None otherwise.
+    tenant_id       Optional tenant identifier for multi-tenant deployments.
+    """
+
+    stream_id: UUID
+    aggregate_type: str
+    aggregate_id: UUID
+    current_version: int
+    event_count: int
+    created_at: datetime
+    updated_at: datetime
+    archived_at: Optional[datetime] = None
+    tenant_id: Optional[str] = None
+
+    @property
+    def is_archived(self) -> bool:
+        return self.archived_at is not None
 
 
 # =============================================================================

@@ -40,6 +40,7 @@ class SubmitApplicationCommand:
     submitted_by: str
     application_id: UUID | None = None
     correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -49,6 +50,8 @@ class RecordCreditAnalysisCommand:
     debt_to_income_ratio: float
     model_version: str | None = None
     analysis_duration_ms: int | None = None
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -57,6 +60,8 @@ class RecordFraudCheckCommand:
     fraud_risk_score: float
     flags: list[str]
     passed: bool
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -64,6 +69,8 @@ class RequestComplianceCheckCommand:
     application_id: UUID
     officer_id: str
     required_checks: list[str]
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -74,6 +81,8 @@ class RecordComplianceCheckCommand:
     check_result: dict
     failure_reason: str
     officer_id: str
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -82,6 +91,8 @@ class FinalizeComplianceCommand:
     application_id: UUID
     officer_id: str
     notes: str = ""
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -92,6 +103,8 @@ class GenerateDecisionCommand:
     confidence_score: float
     reasoning: str
     model_version: str
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -105,6 +118,8 @@ class FinalizeApplicationCommand:
     denied_by: str = ""
     referral_reason: str | None = None
     referred_to: str | None = None
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -114,6 +129,8 @@ class StartAgentSessionCommand:
     agent_version: str
     session_config: dict | None = None
     session_id: UUID | None = None
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 @dataclass
@@ -123,6 +140,8 @@ class LoadAgentContextCommand:
     context_sources: list[str]
     context_snapshot: dict
     loaded_stream_positions: dict[str, int]
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
 
 
 # =============================================================================
@@ -140,6 +159,22 @@ class CommandHandler:
             raise AggregateNotFoundError(aggregate_type, aggregate_id)
         return events
 
+    async def _append(self, aggregate, *, encrypt_fields=None, correlation_id=None, causation_id=None) -> int:
+        """
+        Thin wrapper: append pending events from an aggregate, forwarding
+        correlation_id and causation_id to the store so they are persisted
+        without mutating the event objects.
+        """
+        return await self._store.append(
+            aggregate_type=aggregate.aggregate_type,
+            aggregate_id=aggregate.aggregate_id,
+            events=aggregate.pending_events,
+            expected_version=aggregate.original_version,
+            encrypt_fields=encrypt_fields,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+        )
+
     # -------------------------------------------------------------------------
     # Loan Application Commands
     # -------------------------------------------------------------------------
@@ -148,22 +183,18 @@ class CommandHandler:
         """Submit a new loan application. Returns the application_id."""
         application_id = cmd.application_id or uuid4()
         aggregate = LoanApplicationAggregate(application_id)
-
         aggregate.submit(
             applicant_name=cmd.applicant_name,
             loan_amount=cmd.loan_amount,
             loan_purpose=cmd.loan_purpose,
             applicant_id=cmd.applicant_id,
             submitted_by=cmd.submitted_by,
-            correlation_id=cmd.correlation_id,
         )
-
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=application_id,
-            events=aggregate.pending_events,
-            expected_version=0,
+        await self._append(
+            aggregate,
             encrypt_fields=_PII_FIELDS,
+            correlation_id=cmd.correlation_id,
+            causation_id=cmd.causation_id,
         )
         logger.info("Application submitted: %s", application_id)
         return application_id
@@ -173,23 +204,14 @@ class CommandHandler:
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         aggregate = LoanApplicationAggregate.load(cmd.application_id, events)
-
-        # First request analysis (Submitted → AwaitingAnalysis)
         aggregate.request_credit_analysis(requested_by="system")
-        # Then record results (AwaitingAnalysis → UnderReview)
         aggregate.record_credit_analysis(
             credit_score=cmd.credit_score,
             debt_to_income_ratio=cmd.debt_to_income_ratio,
             model_version=cmd.model_version,
             analysis_duration_ms=cmd.analysis_duration_ms,
         )
-
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=aggregate.pending_events,
-            expected_version=aggregate.version - len(aggregate.pending_events),
-        )
+        await self._append(aggregate, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
     async def handle_record_fraud_check(self, cmd: RecordFraudCheckCommand) -> None:
         events = await self._load_stream_or_raise(
@@ -201,43 +223,26 @@ class CommandHandler:
             flags=cmd.flags,
             passed=cmd.passed,
         )
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=aggregate.pending_events,
-            expected_version=aggregate.version - len(aggregate.pending_events),
-        )
+        await self._append(aggregate, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
     async def handle_request_compliance_check(self, cmd: RequestComplianceCheckCommand) -> UUID:
         """Create compliance record and link to application. Returns compliance_record_id."""
         compliance_id = uuid4()
 
-        # Create compliance record
         compliance = ComplianceRecordAggregate(compliance_id)
         compliance.create(
             application_id=cmd.application_id,
             officer_id=cmd.officer_id,
             required_checks=cmd.required_checks,
         )
-        await self._store.append(
-            aggregate_type=ComplianceRecordAggregate.aggregate_type,
-            aggregate_id=compliance_id,
-            events=compliance.pending_events,
-            expected_version=0,
-        )
+        await self._append(compliance, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
-        # Link to loan application
         app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
         app.request_compliance_check(compliance_record_id=compliance_id)
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=app.pending_events,
-            expected_version=app.version - len(app.pending_events),
-        )
+        await self._append(app, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
         return compliance_id
 
@@ -246,7 +251,6 @@ class CommandHandler:
             ComplianceRecordAggregate.aggregate_type, cmd.compliance_record_id
         )
         aggregate = ComplianceRecordAggregate.load(cmd.compliance_record_id, events)
-
         if cmd.passed:
             aggregate.pass_check(
                 check_name=cmd.check_name,
@@ -259,13 +263,7 @@ class CommandHandler:
                 failure_reason=cmd.failure_reason,
                 officer_id=cmd.officer_id,
             )
-
-        await self._store.append(
-            aggregate_type=ComplianceRecordAggregate.aggregate_type,
-            aggregate_id=cmd.compliance_record_id,
-            events=aggregate.pending_events,
-            expected_version=aggregate.version - len(aggregate.pending_events),
-        )
+        await self._append(aggregate, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
     async def handle_finalize_compliance(self, cmd: FinalizeComplianceCommand) -> bool:
         """Finalize compliance and transition loan application to PendingDecision. Returns overall_passed."""
@@ -274,28 +272,15 @@ class CommandHandler:
         )
         compliance = ComplianceRecordAggregate.load(cmd.compliance_record_id, comp_events)
         compliance.finalize(officer_id=cmd.officer_id, notes=cmd.notes)
+        await self._append(compliance, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
-        await self._store.append(
-            aggregate_type=ComplianceRecordAggregate.aggregate_type,
-            aggregate_id=cmd.compliance_record_id,
-            events=compliance.pending_events,
-            expected_version=compliance.version - len(compliance.pending_events),
-        )
-
-        # Transition loan application: ComplianceCheck → PendingDecision
         app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
         app.set_compliance_result(compliance.overall_passed)
         app.move_to_pending_decision()
-
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=app.pending_events,
-            expected_version=app.version - len(app.pending_events),
-        )
+        await self._append(app, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
         return compliance.overall_passed
 
@@ -305,7 +290,6 @@ class CommandHandler:
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
 
-        # Load compliance result from compliance record (in case set_compliance_result wasn't called)
         if app.compliance_record_id and app.compliance_passed is None:
             comp_events = await self._store.load_stream(
                 ComplianceRecordAggregate.aggregate_type, app.compliance_record_id
@@ -320,15 +304,8 @@ class CommandHandler:
             model_version=cmd.model_version,
             agent_session_id=cmd.agent_session_id,
         )
+        await self._append(app, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=app.pending_events,
-            expected_version=app.version - len(app.pending_events),
-        )
-
-        # Also record in agent session
         sess_events = await self._store.load_stream(
             AgentSessionAggregate.aggregate_type, cmd.agent_session_id
         )
@@ -340,12 +317,7 @@ class CommandHandler:
             reasoning=cmd.reasoning,
             processing_duration_ms=0,
         )
-        await self._store.append(
-            aggregate_type=AgentSessionAggregate.aggregate_type,
-            aggregate_id=cmd.agent_session_id,
-            events=session.pending_events,
-            expected_version=session.version - len(session.pending_events),
-        )
+        await self._append(session, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
     async def handle_finalize_application(self, cmd: FinalizeApplicationCommand) -> None:
         app_events = await self._load_stream_or_raise(
@@ -360,27 +332,17 @@ class CommandHandler:
             compliance = ComplianceRecordAggregate.load(app.compliance_record_id, comp_events)
             app.set_compliance_result(compliance.overall_passed)
 
-        if cmd.referral_reason:
-            app.refer(referral_reason=cmd.referral_reason, referred_to=cmd.referred_to or "")
-        elif cmd.approved:
-            app.approve(
-                approved_amount=cmd.approved_amount or app.loan_amount,
-                interest_rate=cmd.interest_rate or 0.0,
-                approved_by=cmd.approved_by,
-                conditions=[],
-            )
-        else:
-            app.deny(
-                denial_reasons=cmd.denial_reasons or ["Decision denied"],
-                denied_by=cmd.denied_by,
-            )
-
-        await self._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=cmd.application_id,
-            events=app.pending_events,
-            expected_version=app.version - len(app.pending_events),
+        app.finalize(
+            approved=cmd.approved,
+            approved_amount=cmd.approved_amount,
+            interest_rate=cmd.interest_rate,
+            approved_by=cmd.approved_by,
+            denial_reasons=cmd.denial_reasons,
+            denied_by=cmd.denied_by,
+            referral_reason=cmd.referral_reason,
+            referred_to=cmd.referred_to,
         )
+        await self._append(app, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
     # -------------------------------------------------------------------------
     # Agent Session Commands
@@ -395,12 +357,7 @@ class CommandHandler:
             agent_version=cmd.agent_version,
             session_config=cmd.session_config,
         )
-        await self._store.append(
-            aggregate_type=AgentSessionAggregate.aggregate_type,
-            aggregate_id=session_id,
-            events=session.pending_events,
-            expected_version=0,
-        )
+        await self._append(session, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
         return session_id
 
     async def handle_load_agent_context(self, cmd: LoadAgentContextCommand) -> None:
@@ -414,9 +371,4 @@ class CommandHandler:
             context_snapshot=cmd.context_snapshot,
             loaded_stream_positions=cmd.loaded_stream_positions,
         )
-        await self._store.append(
-            aggregate_type=AgentSessionAggregate.aggregate_type,
-            aggregate_id=cmd.session_id,
-            events=session.pending_events,
-            expected_version=session.version - len(session.pending_events),
-        )
+        await self._append(session, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)

@@ -17,6 +17,23 @@ class AggregateRoot:
         3. _raise_event() appends to pending_events and calls apply()
         4. Command handler appends pending_events to EventStore
 
+    Version tracking
+    ----------------
+    ``version``          — current stream version, incremented by every apply().
+                           After load() this equals the number of replayed events.
+                           After commands it includes the new pending events.
+    ``original_version`` — the version at the moment load() completed, i.e. the
+                           version the stream was at *before* any new events were
+                           raised.  Pass this directly as ``expected_version`` to
+                           EventStore.append() — no arithmetic required.
+
+    Example::
+
+        agg = MyAggregate.load(id, events)
+        agg.do_something()
+        await store.append(..., events=agg.pending_events,
+                           expected_version=agg.original_version)
+
     Aggregates NEVER call other aggregates directly.
     They communicate only via events.
     """
@@ -25,7 +42,8 @@ class AggregateRoot:
 
     def __init__(self, aggregate_id: UUID):
         self.aggregate_id = aggregate_id
-        self.version: int = 0          # Current stream version (for OCC)
+        self.version: int = 0           # Current stream version (for OCC)
+        self.original_version: int = 0  # Version at load time — use as expected_version
         self.pending_events: list[DomainEvent] = []
 
     def _raise_event(self, event: DomainEvent) -> None:
@@ -51,7 +69,9 @@ class AggregateRoot:
         instance = cls(aggregate_id)
         for event in events:
             instance.apply(event)
-        # After replay, version reflects the stream version; pending_events is empty
+        # Snapshot the version before any commands are executed so handlers
+        # can pass it directly as expected_version without arithmetic.
+        instance.original_version = instance.version
         instance.pending_events = []
         return instance
 

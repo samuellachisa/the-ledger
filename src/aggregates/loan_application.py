@@ -86,7 +86,6 @@ class LoanApplicationAggregate(AggregateRoot):
         loan_purpose: str,
         applicant_id: UUID,
         submitted_by: str,
-        correlation_id: UUID | None = None,
     ) -> None:
         if self.status is not None:
             raise InvalidStateTransitionError(
@@ -100,7 +99,6 @@ class LoanApplicationAggregate(AggregateRoot):
             loan_purpose=loan_purpose,
             applicant_id=applicant_id,
             submitted_by=submitted_by,
-            correlation_id=correlation_id,
         ))
 
     def request_credit_analysis(self, requested_by: str) -> None:
@@ -225,6 +223,39 @@ class LoanApplicationAggregate(AggregateRoot):
             referred_to=referred_to,
         ))
 
+    def finalize(
+        self,
+        approved: bool,
+        approved_amount: float | None = None,
+        interest_rate: float | None = None,
+        approved_by: str = "",
+        conditions: list[str] | None = None,
+        denial_reasons: list[str] | None = None,
+        denied_by: str = "",
+        referral_reason: str | None = None,
+        referred_to: str | None = None,
+    ) -> None:
+        """
+        Apply the final disposition of the application.
+
+        Encapsulates the approve / deny / refer branching so handlers
+        don't need to make that routing decision themselves.
+        """
+        if referral_reason:
+            self.refer(referral_reason=referral_reason, referred_to=referred_to or "")
+        elif approved:
+            self.approve(
+                approved_amount=approved_amount or self.loan_amount,
+                interest_rate=interest_rate or 0.0,
+                approved_by=approved_by,
+                conditions=conditions or [],
+            )
+        else:
+            self.deny(
+                denial_reasons=denial_reasons or ["Decision denied"],
+                denied_by=denied_by,
+            )
+
     def withdraw(self, withdrawn_by: str, reason: str) -> None:
         if self.status in (LoanStatus.FINAL_APPROVED, LoanStatus.DENIED, LoanStatus.WITHDRAWN):
             raise InvalidStateTransitionError(
@@ -326,6 +357,7 @@ class LoanApplicationAggregate(AggregateRoot):
         from uuid import UUID as _UUID
         inst = cls(aggregate_id)
         inst.version = version
+        inst.original_version = version
         inst.status = LoanStatus(data["status"]) if data.get("status") else None
         inst.applicant_name = data.get("applicant_name", "")
         inst.loan_amount = data.get("loan_amount", 0.0)
