@@ -33,10 +33,22 @@ from uuid import UUID
 
 import asyncpg
 
+from src.encryption.field import FieldEncryptor
+
 logger = logging.getLogger(__name__)
 
 SNAPSHOT_THRESHOLD = 10   # Take a snapshot every N events
 SNAPSHOT_SCHEMA_VERSION = 1
+
+# PII fields that may be present in LoanApplication snapshots
+_SNAPSHOT_PII_FIELDS = ["applicant_name", "applicant_id"]
+
+
+def _get_encryptor() -> FieldEncryptor | None:
+    import os
+    if os.environ.get("FIELD_ENCRYPTION_KEY"):
+        return FieldEncryptor.from_env()
+    return None
 
 
 class SnapshotStore:
@@ -90,6 +102,12 @@ class SnapshotStore:
 
         data = dict(row["snapshot_data"])
         data = self._migrate_snapshot_data(data, from_version=row["schema_version"])
+
+        # Decrypt PII fields if encryption is enabled
+        enc = _get_encryptor()
+        if enc:
+            data = enc.decrypt_fields(data, _SNAPSHOT_PII_FIELDS)
+
         return {
             "stream_position": row["stream_position"],
             "schema_version": row["schema_version"],
@@ -104,8 +122,14 @@ class SnapshotStore:
         state: dict[str, Any],
     ) -> None:
         """
-        Persist a snapshot. Silently skips if one already exists at this position.
+        Persist a snapshot. Encrypts PII fields if FIELD_ENCRYPTION_KEY is set.
+        Silently skips if one already exists at this position.
         """
+        data_to_store = state
+        enc = _get_encryptor()
+        if enc and aggregate_type == "LoanApplication":
+            data_to_store = enc.encrypt_fields(dict(state), _SNAPSHOT_PII_FIELDS)
+
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
@@ -115,7 +139,7 @@ class SnapshotStore:
                 ON CONFLICT (aggregate_type, aggregate_id, stream_position) DO NOTHING
                 """,
                 aggregate_type, aggregate_id, stream_position,
-                state, SNAPSHOT_SCHEMA_VERSION,
+                data_to_store, SNAPSHOT_SCHEMA_VERSION,
             )
         logger.debug(
             "Snapshot saved: %s/%s at version %d", aggregate_type, aggregate_id, stream_position
