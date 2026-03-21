@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apex-financial-mcp
+  namespace: default
+  labels:
+    app: apex-financial-mcp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: apex-financial-mcp
+  template:
+    metadata:
+      labels:
+        app: apex-financial-mcp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mcp-server
+          image: apex-financial-event-store:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "src.mcp.server"]
+          ports:
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: apex-financial-config
+            - secretRef:
+                name: apex-financial-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

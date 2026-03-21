@@ -17,6 +17,7 @@ from mcp.types import CallToolResult, GetResourceResult, Resource, Tool
 
 from src.auth.tokens import AuthError, TokenStore
 from src.commands.handlers import CommandHandler
+from src.mcp.validation import ValidationError, validate_arguments
 from src.dead_letter.queue import DeadLetterQueue
 from src.erasure.handler import ErasureHandler
 from src.event_store import EventStore
@@ -40,6 +41,7 @@ app = Server("apex-financial-event-store")
 
 # Global state (initialized in create_server)
 _pool: asyncpg.Pool | None = None
+_read_pool: asyncpg.Pool | None = None
 _event_store: EventStore | None = None
 _handler: CommandHandler | None = None
 _reconstructor: AgentContextReconstructor | None = None
@@ -88,39 +90,53 @@ async def list_tools() -> list[Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> CallToolResult:
+    from src.observability.tracing import start_span
     pool, event_store, handler = _get_deps()
-    try:
-        await _authenticate(arguments, name)
-        return await dispatch_tool(
-            name=name,
-            arguments=arguments,
-            handler=handler,
-            token_store=_token_store,
-            idempotency=_idempotency,
-            erasure=_erasure,
-        )
-    except OptimisticConcurrencyError as e:
-        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "occ_error"})
-        return _err("OptimisticConcurrencyError", str(e), e.to_dict())
-    except BusinessRuleViolationError as e:
-        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "rule_error"})
-        return _err("BusinessRuleViolationError", str(e), {"rule": e.rule})
-    except InvalidStateTransitionError as e:
-        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "state_error"})
-        return _err("InvalidStateTransitionError", str(e), {"from_state": e.from_state, "to_state": e.to_state})
-    except AggregateNotFoundError as e:
-        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "not_found"})
-        return _err("AggregateNotFoundError", str(e))
-    except AuthError as e:
-        get_metrics().increment("auth_failures_total", labels={"reason": e.code})
-        return _err(e.code, str(e))
-    except RateLimitExceededError as e:
-        get_metrics().increment("rate_limit_hits_total", labels={"agent_id": e.agent_id, "action": e.action})
-        return _err("RateLimitExceeded", str(e), {"retry_after_seconds": e.retry_after_seconds})
-    except Exception as e:
-        get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "internal_error"})
-        logger.exception("Unexpected error in tool %s", name)
-        return _err("InternalError", str(e))
+    async with start_span(f"tool.{name}") as span:
+        span.set_attribute("tool_name", name)
+        try:
+            await _authenticate(arguments, name)
+            # Validate arguments against inputSchema before dispatch
+            tool_defs = {t.name: t for t in get_tool_definitions()}
+            if name in tool_defs:
+                validate_arguments(name, arguments, tool_defs[name].inputSchema)
+            result = await dispatch_tool(
+                name=name,
+                arguments=arguments,
+                handler=handler,
+                token_store=_token_store,
+                idempotency=_idempotency,
+                erasure=_erasure,
+            )
+            outcome = "error" if result.isError else "success"
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": outcome})
+            get_metrics().histogram("tool_latency_ms", span.elapsed_ms(), labels={"tool_name": name})
+            return result
+        except OptimisticConcurrencyError as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "occ_error"})
+            return _err("OptimisticConcurrencyError", str(e), e.to_dict())
+        except BusinessRuleViolationError as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "rule_error"})
+            return _err("BusinessRuleViolationError", str(e), {"rule": e.rule})
+        except InvalidStateTransitionError as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "state_error"})
+            return _err("InvalidStateTransitionError", str(e), {"from_state": e.from_state, "to_state": e.to_state})
+        except AggregateNotFoundError as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "not_found"})
+            return _err("AggregateNotFoundError", str(e))
+        except AuthError as e:
+            get_metrics().increment("auth_failures_total", labels={"reason": e.code})
+            return _err(e.code, str(e))
+        except RateLimitExceededError as e:
+            get_metrics().increment("rate_limit_hits_total", labels={"agent_id": e.agent_id, "action": e.action})
+            return _err("RateLimitExceeded", str(e), {"retry_after_seconds": e.retry_after_seconds})
+        except ValidationError as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "validation_error"})
+            return _err("ValidationError", str(e), {"field": e.field} if e.field else {})
+        except Exception as e:
+            get_metrics().increment("tool_calls_total", labels={"tool_name": name, "outcome": "internal_error"})
+            logger.exception("Unexpected error in tool %s", name)
+            return _err("InternalError", str(e))
 
 
 # =============================================================================
@@ -177,16 +193,31 @@ async def create_server(
     pool_max_size: int = 10,
     wait_for_db: bool = True,
 ) -> None:
-    global _pool, _event_store, _handler, _reconstructor
+    global _pool, _read_pool, _event_store, _handler, _reconstructor
     global _token_store, _rate_limiter, _dead_letter, _idempotency, _erasure
 
     if wait_for_db:
         await _wait_for_db(database_url)
 
+    db_ssl = os.environ.get("DB_SSL", "").lower()
+    ssl_param = db_ssl if db_ssl in ("require", "verify-ca", "verify-full") else None
+
     _pool = await asyncpg.create_pool(
-        database_url, min_size=pool_min_size, max_size=pool_max_size
+        database_url, min_size=pool_min_size, max_size=pool_max_size,
+        ssl=ssl_param,
     )
-    _event_store = EventStore(_pool, UpcasterRegistry())
+
+    # Optional read replica pool
+    read_url = os.environ.get("DB_READ_URL")
+    _read_pool = None
+    if read_url:
+        _read_pool = await asyncpg.create_pool(
+            read_url, min_size=pool_min_size, max_size=pool_max_size,
+            ssl=ssl_param,
+        )
+        logger.info("Read replica pool initialized from DB_READ_URL")
+
+    _event_store = EventStore(_pool, UpcasterRegistry(), read_pool=_read_pool)
     _handler = CommandHandler(_event_store)
     _reconstructor = AgentContextReconstructor(_event_store)
     _dead_letter = DeadLetterQueue(_pool)
@@ -233,7 +264,7 @@ async def main() -> None:
     metrics_server = None
     if metrics_port:
         from src.observability.http_server import MetricsHttpServer
-        metrics_server = MetricsHttpServer(get_metrics())
+        metrics_server = MetricsHttpServer(get_metrics(), pool=_pool)
         await metrics_server.start()
 
     # Start token cleanup job if auth is enabled
@@ -243,16 +274,36 @@ async def main() -> None:
         cleanup_job = TokenCleanupJob(_pool)
         await cleanup_job.start()
 
+    # Start archival scheduler
+    archival_scheduler = None
+    if os.environ.get("ENABLE_ARCHIVAL", "false").lower() == "true" and _pool:
+        from src.archival.scheduler import ArchivalScheduler
+        archival_scheduler = ArchivalScheduler(_pool)
+        await archival_scheduler.start()
+
+    # Start erasure enforcement scheduler
+    erasure_scheduler = None
+    if os.environ.get("ENABLE_ERASURE_SCHEDULER", "false").lower() == "true" and _pool and _event_store:
+        from src.erasure.scheduler import ErasureScheduler
+        erasure_scheduler = ErasureScheduler(_pool, _event_store)
+        await erasure_scheduler.start()
+
     try:
         async with stdio_server() as (read_stream, write_stream):
             await app.run(read_stream, write_stream, app.create_initialization_options())
     finally:
         if cleanup_job:
             await cleanup_job.stop()
+        if archival_scheduler:
+            await archival_scheduler.stop()
+        if erasure_scheduler:
+            await erasure_scheduler.stop()
         if metrics_server:
             await metrics_server.stop()
         if _pool:
             await _pool.close()
+        if _read_pool:
+            await _read_pool.close()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: apex-financial-mcp
+  namespace: default
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: apex-financial-mcp

@@ -445,3 +445,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_integrity_alerts_open
 CREATE INDEX IF NOT EXISTS idx_integrity_alerts_unresolved
     ON integrity_alerts (created_at DESC)
     WHERE resolved_at IS NULL;
+
+-- =============================================================================
+-- auth_audit_log: Durable audit trail for token issuance, verification,
+-- revocation, and failures. Required for SOC2 / financial compliance.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS auth_audit_log (
+    audit_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type      VARCHAR(50) NOT NULL  -- issued | verified | refreshed | revoked | failed
+                        CHECK (event_type IN ('issued', 'verified', 'refreshed', 'revoked', 'failed')),
+    agent_id        VARCHAR(100),
+    token_id        UUID,
+    ip_address      VARCHAR(45),
+    failure_reason  VARCHAR(100),
+    metadata        JSONB NOT NULL DEFAULT '{}',
+    occurred_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_audit_log_agent
+    ON auth_audit_log (agent_id, occurred_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_auth_audit_log_failures
+    ON auth_audit_log (event_type, occurred_at DESC)
+    WHERE event_type = 'failed';

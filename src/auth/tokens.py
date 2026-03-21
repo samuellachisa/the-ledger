@@ -130,16 +130,22 @@ class TokenStore:
         roles_json = [r.value for r in roles]
 
         async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO agent_tokens (token_hash, agent_id, roles, expires_at)
-                VALUES ($1, $2, $3, $4)
-                """,
-                token_hash, agent_id, roles_json, expires_at,
-            )
+            async with conn.transaction():
+                token_id = await conn.fetchval(
+                    """
+                    INSERT INTO agent_tokens (token_hash, agent_id, roles, expires_at)
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING token_id
+                    """,
+                    token_hash, agent_id, roles_json, expires_at,
+                )
+                await conn.execute(
+                    "INSERT INTO auth_audit_log (event_type, agent_id, token_id, metadata) "
+                    "VALUES ('issued', $1, $2, $3)",
+                    agent_id, token_id, {"roles": roles_json},
+                )
         logger.info("Token issued for agent %s with roles %s", agent_id, roles_json)
         return raw_token
-
     async def verify(self, raw_token: str) -> AgentIdentity:
         """
         Verify a raw token and return the agent's identity.
@@ -157,10 +163,36 @@ class TokenStore:
             )
 
         if row is None:
+            # Audit failed attempt (no agent_id known)
+            try:
+                async with self._pool.acquire() as conn:
+                    await conn.execute(
+                        "INSERT INTO auth_audit_log (event_type, failure_reason) VALUES ('failed', 'InvalidToken')"
+                    )
+            except Exception:
+                pass
             raise AuthError("Invalid token", "InvalidToken")
         if row["revoked_at"] is not None:
+            try:
+                async with self._pool.acquire() as conn:
+                    await conn.execute(
+                        "INSERT INTO auth_audit_log (event_type, agent_id, token_id, failure_reason) "
+                        "VALUES ('failed', $1, $2, 'TokenRevoked')",
+                        row["agent_id"], row["token_id"],
+                    )
+            except Exception:
+                pass
             raise AuthError("Token has been revoked", "TokenRevoked")
         if row["expires_at"] < datetime.now(timezone.utc):
+            try:
+                async with self._pool.acquire() as conn:
+                    await conn.execute(
+                        "INSERT INTO auth_audit_log (event_type, agent_id, token_id, failure_reason) "
+                        "VALUES ('failed', $1, $2, 'TokenExpired')",
+                        row["agent_id"], row["token_id"],
+                    )
+            except Exception:
+                pass
             raise AuthError("Token has expired", "TokenExpired")
 
         # Update last_used_at (best-effort, don't fail auth if this fails)
@@ -169,6 +201,10 @@ class TokenStore:
                 await conn.execute(
                     "UPDATE agent_tokens SET last_used_at = NOW() WHERE token_id = $1",
                     row["token_id"],
+                )
+                await conn.execute(
+                    "INSERT INTO auth_audit_log (event_type, agent_id, token_id) VALUES ('verified', $1, $2)",
+                    row["agent_id"], row["token_id"],
                 )
         except Exception:
             pass
@@ -216,6 +252,10 @@ class TokenStore:
                     "UPDATE agent_tokens SET revoked_at = NOW() WHERE token_id = $1",
                     identity.token_id,
                 )
+                await conn.execute(
+                    "INSERT INTO auth_audit_log (event_type, agent_id, token_id) VALUES ('refreshed', $1, $2)",
+                    identity.agent_id, identity.token_id,
+                )
 
         logger.info(
             "Token refreshed for agent %s (old=%s)", identity.agent_id, identity.token_id
@@ -225,14 +265,22 @@ class TokenStore:
     async def revoke(self, token_id: UUID, revoked_by: str) -> bool:
         """Revoke a token. Returns True if found and revoked."""
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
-                """
-                UPDATE agent_tokens SET revoked_at = NOW()
-                WHERE token_id = $1 AND revoked_at IS NULL
-                """,
-                token_id,
-            )
-        revoked = result.split()[-1] != "0"
+            async with conn.transaction():
+                row = await conn.fetchrow(
+                    "SELECT agent_id FROM agent_tokens WHERE token_id = $1", token_id
+                )
+                result = await conn.execute(
+                    "UPDATE agent_tokens SET revoked_at = NOW() "
+                    "WHERE token_id = $1 AND revoked_at IS NULL",
+                    token_id,
+                )
+                revoked = result.split()[-1] != "0"
+                if revoked and row:
+                    await conn.execute(
+                        "INSERT INTO auth_audit_log (event_type, agent_id, token_id, metadata) "
+                        "VALUES ('revoked', $1, $2, $3)",
+                        row["agent_id"], token_id, {"revoked_by": revoked_by},
+                    )
         if revoked:
             logger.info("Token %s revoked by %s", token_id, revoked_by)
         return revoked

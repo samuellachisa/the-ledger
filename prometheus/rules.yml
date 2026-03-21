@@ -1,0 +1,75 @@
+groups:
+  - name: apex_financial_slos
+    interval: 30s
+    rules:
+      # Projection lag SLO: alert if any projection is > 1000 events behind
+      - alert: ProjectionLagHigh
+        expr: projection_lag_events > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Projection {{ $labels.projection_name }} is lagging"
+          description: "{{ $labels.projection_name }} is {{ $value }} events behind the event log."
+
+      # Dead letter queue depth
+      - alert: DeadLetterQueueDepthHigh
+        expr: dead_letter_queue_depth > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dead letter queue depth is high"
+          description: "DLQ depth is {{ $value }}. Events may need manual intervention."
+
+      # Auth failure rate
+      - alert: AuthFailureRateHigh
+        expr: rate(auth_failures_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High auth failure rate"
+          description: "Auth failures at {{ $value }}/s — possible brute force attack."
+
+      # OCC conflict rate
+      - alert: OCCConflictRateHigh
+        expr: rate(occ_conflicts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High OCC conflict rate for {{ $labels.aggregate_type }}"
+          description: "OCC conflicts at {{ $value }}/s — possible contention issue."
+
+      # Tool error rate
+      - alert: ToolErrorRateHigh
+        expr: rate(tool_calls_total{outcome=~".*error.*"}[5m]) / rate(tool_calls_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tool error rate above 5% for {{ $labels.tool_name }}"
+          description: "Error rate is {{ $value | humanizePercentage }}."
+
+      # Tool p95 latency
+      - alert: ToolLatencyHigh
+        expr: histogram_quantile(0.95, rate(tool_latency_ms_bucket[5m])) > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tool p95 latency above 2s for {{ $labels.tool_name }}"
+          description: "p95 latency is {{ $value }}ms."
+
+  - name: apex_financial_integrity
+    rules:
+      # Saga stuck count
+      - alert: SagaStuck
+        expr: saga_stuck_count > 5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sagas are stuck in failed state"
+          description: "{{ $value }} saga instances are in 'failed' state."

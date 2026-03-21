@@ -208,6 +208,20 @@ class ProjectionDaemon:
             # Update latest known position
             if events:
                 self._latest_global_position = events[-1].global_position
+                # Emit lag metrics for SLO monitoring
+                for projection_name in self._handlers:
+                    checkpoint = self._last_positions.get(projection_name, 0)
+                    lag_events = max(0, self._latest_global_position - checkpoint)
+                    get_metrics().gauge(
+                        "projection_lag_events",
+                        lag_events,
+                        labels={"projection_name": projection_name},
+                    )
+                    if lag_events > 1000:
+                        logger.warning(
+                            "Projection %s lag SLO breach: %d events behind",
+                            projection_name, lag_events,
+                        )
         finally:
             self._batch_done.set()
 

@@ -21,7 +21,8 @@ from src.commands.handlers import (
     RecordFraudCheckCommand,
     RequestComplianceCheckCommand,
     SubmitApplicationCommand,
-)from src.models.events import DecisionOutcome
+)
+from src.models.events import DecisionOutcome
 from src.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)

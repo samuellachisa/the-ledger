@@ -31,10 +31,11 @@ class MetricsHttpServer:
     Uses only stdlib asyncio — no aiohttp dependency required.
     """
 
-    def __init__(self, metrics, host: str | None = None, port: int | None = None):
+    def __init__(self, metrics, host: str | None = None, port: int | None = None, pool=None):
         self._metrics = metrics
         self._host = host or os.environ.get("METRICS_HOST", "0.0.0.0")
         self._port = port or int(os.environ.get("METRICS_PORT", "9090"))
+        self._pool = pool  # asyncpg pool for readiness probe
         self._server: Optional[asyncio.AbstractServer] = None
 
     async def start(self) -> None:
@@ -68,8 +69,20 @@ class MetricsHttpServer:
                 status = b"200 OK"
                 content_type = b"text/plain; version=0.0.4; charset=utf-8"
             elif path == "/health":
-                body = b'{"status":"ok"}'
-                status = b"200 OK"
+                # Real readiness probe: check DB pool
+                db_ok = False
+                if self._pool:
+                    try:
+                        async with self._pool.acquire() as conn:
+                            db_ok = await conn.fetchval("SELECT 1") == 1
+                    except Exception:
+                        db_ok = False
+                else:
+                    db_ok = True  # no pool configured — assume ok
+                import json
+                health_data = {"status": "ok" if db_ok else "degraded", "db": db_ok}
+                body = json.dumps(health_data).encode()
+                status = b"200 OK" if db_ok else b"503 Service Unavailable"
                 content_type = b"application/json"
             else:
                 body = b"Not Found"

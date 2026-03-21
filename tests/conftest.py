@@ -50,10 +50,14 @@ async def setup_schema(db_pool):
 
 @pytest_asyncio.fixture(autouse=True)
 async def clean_tables(db_pool):
-    """Truncate all tables before each test for isolation."""
+    """
+    Truncate all mutable tables before each test for isolation.
+    Uses TRUNCATE ... CASCADE for correctness and resets checkpoints.
+    """
     async with db_pool.acquire() as conn:
         await conn.execute("""
             TRUNCATE TABLE
+                auth_audit_log,
                 outbox,
                 audit_ledger_projection,
                 compliance_audit_projection,
@@ -72,7 +76,6 @@ async def clean_tables(db_pool):
                 event_streams
             RESTART IDENTITY CASCADE
         """)
-        # Reset checkpoints
         await conn.execute("UPDATE projection_checkpoints SET last_position = 0")
         await conn.execute("UPDATE saga_checkpoints SET last_position = 0")
     yield

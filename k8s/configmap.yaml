@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apex-financial-config
+  namespace: default
+data:
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  METRICS_PORT: "9090"
+  METRICS_HOST: "0.0.0.0"
+  DB_POOL_MIN_SIZE: "2"
+  DB_POOL_MAX_SIZE: "10"
+  DB_STARTUP_RETRIES: "15"
+  DB_STARTUP_RETRY_DELAY_SECONDS: "3.0"
+  DB_SSL: "require"
+  ENABLE_AUTH: "true"
+  ENABLE_ARCHIVAL: "true"
+  ENABLE_ERASURE_SCHEDULER: "true"
+  ARCHIVAL_AGE_DAYS: "90"
+  ERASURE_INTERVAL_MINUTES: "60"

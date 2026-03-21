@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, Optional, TypeVar
 from uuid import UUID, uuid4
 
 import asyncpg
@@ -49,6 +49,27 @@ logger = logging.getLogger(__name__)
 _RETRY_BASE_MS = 10
 _RETRY_FACTOR = 2
 _RETRY_MAX_ATTEMPTS = 5
+
+# Transient DB error retry config
+_DB_RETRY_ATTEMPTS = 3
+_DB_RETRY_BASE_MS = 50
+
+T = TypeVar("T")
+
+
+async def _with_db_retry(fn: Callable[[], Coroutine[Any, Any, T]], attempts: int = _DB_RETRY_ATTEMPTS) -> T:
+    """Retry a DB operation on transient connection errors."""
+    last_err: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return await fn()
+        except (asyncpg.PostgresConnectionError, asyncpg.TooManyConnectionsError) as e:
+            last_err = e
+            if attempt < attempts - 1:
+                delay = _DB_RETRY_BASE_MS * (2 ** attempt) / 1000
+                logger.warning("Transient DB error (attempt %d/%d): %s — retrying in %.2fs", attempt + 1, attempts, e, delay)
+                await asyncio.sleep(delay)
+    raise last_err  # type: ignore
 
 # PII fields that may be encrypted in LoanApplicationSubmitted payloads
 _ENCRYPTED_PII_FIELDS = ["applicant_name", "applicant_id"]
@@ -96,8 +117,14 @@ class EventStore:
         events = await store.load_stream(stream_id)
     """
 
-    def __init__(self, pool: asyncpg.Pool, upcaster_registry: Optional[UpcasterRegistry] = None):
+    def __init__(
+        self,
+        pool: asyncpg.Pool,
+        upcaster_registry: Optional[UpcasterRegistry] = None,
+        read_pool: Optional[asyncpg.Pool] = None,
+    ):
         self._pool = pool
+        self._read_pool = read_pool or pool  # fallback to primary if no replica
         self._upcasters = upcaster_registry or UpcasterRegistry()
         self._snapshots = SnapshotStore(pool)
 
@@ -298,7 +325,7 @@ class EventStore:
                     aggregate_type, aggregate_id, effective_from,
                 )
 
-        async with self._pool.acquire() as conn:
+        async with self._read_pool.acquire() as conn:
             query = """
                 SELECT e.*
                 FROM events e
@@ -318,8 +345,7 @@ class EventStore:
 
         return [self._deserialize(StoredEvent(row)) for row in rows]
 
-    async def load_all(
-        self,
+    async def load_all(        self,
         after_position: int = 0,
         limit: int = 1000,
         aggregate_type: Optional[str] = None,
@@ -331,7 +357,7 @@ class EventStore:
         Returns raw StoredEvent (not upcasted) — projections handle their own
         schema concerns.
         """
-        async with self._pool.acquire() as conn:
+        async with self._read_pool.acquire() as conn:
             if aggregate_type:
                 rows = await conn.fetch(
                     """

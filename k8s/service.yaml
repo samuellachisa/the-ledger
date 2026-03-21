@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: apex-financial-mcp
+  namespace: default
+  labels:
+    app: apex-financial-mcp
+spec:
+  selector:
+    app: apex-financial-mcp
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
