@@ -14,7 +14,7 @@ import time
 from uuid import UUID
 
 import asyncpg
-from mcp.types import GetResourceResult, Resource, TextContent
+from mcp.types import ReadResourceResult, Resource, TextContent
 
 from src.event_store import EventStore
 from src.integrity.audit_chain import run_integrity_check
@@ -35,16 +35,19 @@ def get_resource_definitions() -> list[Resource]:
         Resource(uri="ledger://applications/{id}/compliance", name="Compliance History", mimeType="application/json"),
         Resource(uri="ledger://agents/performance", name="Agent Performance", mimeType="application/json"),
         Resource(uri="ledger://integrity/{id}", name="Integrity Check", mimeType="application/json"),
+        Resource(uri="ledger://integrity/alerts", name="Open Integrity Alerts", mimeType="application/json"),
         Resource(uri="ledger://dead-letters", name="Dead Letter Queue", mimeType="application/json"),
         Resource(uri="ledger://metrics", name="System Metrics", mimeType="application/json"),
         Resource(uri="ledger://metrics/prometheus", name="Prometheus Metrics", mimeType="text/plain"),
         Resource(uri="ledger://events/correlation/{id}", name="Correlation Chain", mimeType="application/json"),
         Resource(uri="ledger://events/causation/{id}", name="Causation Chain", mimeType="application/json"),
+        Resource(uri="ledger://saga/status", name="Saga Instance Status", mimeType="application/json"),
+        Resource(uri="ledger://auth/audit", name="Auth Audit Log", mimeType="application/json"),
     ]
 
 
-def _json(data) -> GetResourceResult:
-    return GetResourceResult(contents=[
+def _json(data) -> ReadResourceResult:
+    return ReadResourceResult(contents=[
         TextContent(type="text", text=json.dumps(data, default=str))
     ])
 
@@ -54,7 +57,8 @@ async def dispatch_resource(
     pool: asyncpg.Pool,
     event_store: EventStore,
     dead_letter=None,
-) -> GetResourceResult:
+    integrity_monitor=None,
+) -> ReadResourceResult:
     """Route a resource URI to the appropriate query."""
     async with pool.acquire() as conn:
 
@@ -132,6 +136,16 @@ async def dispatch_resource(
         elif uri == "ledger://agents/performance":
             return _json(await list_agent_performance(conn))
 
+        elif uri == "ledger://integrity/alerts":
+            if integrity_monitor:
+                alerts = await integrity_monitor.get_open_alerts()
+            else:
+                alerts = await conn.fetch(
+                    "SELECT * FROM integrity_alerts WHERE resolved_at IS NULL ORDER BY created_at DESC"
+                )
+                alerts = [dict(r) for r in alerts]
+            return _json({"open_alerts": alerts, "count": len(alerts)})
+
         elif uri.startswith("ledger://integrity/"):
             app_id = UUID(uri.split("/")[-1])
             return _json(await run_integrity_check(pool, event_store, app_id))
@@ -150,7 +164,7 @@ async def dispatch_resource(
         elif uri == "ledger://metrics/prometheus":
             from src.observability.exporters import PrometheusExporter
             text = PrometheusExporter(get_metrics()).export()
-            return GetResourceResult(contents=[TextContent(type="text", text=text)])
+            return ReadResourceResult(contents=[TextContent(type="text", text=text)])
 
         elif uri.startswith("ledger://events/correlation/"):
             corr_id = UUID(uri.split("/")[-1])
@@ -171,6 +185,35 @@ async def dispatch_resource(
                  "event_id": str(e.event_id), "causation_id": str(e.causation_id)}
                 for e in events
             ])
+
+        elif uri == "ledger://saga/status":
+            rows = await conn.fetch(
+                """
+                SELECT saga_id, application_id, step, compliance_record_id,
+                       retry_count, created_at, updated_at
+                FROM saga_instances
+                ORDER BY updated_at DESC
+                LIMIT 100
+                """
+            )
+            stuck = [r for r in rows if r["step"] == "failed"]
+            return _json({
+                "total": len(rows),
+                "stuck_count": len(stuck),
+                "instances": [dict(r) for r in rows],
+            })
+
+        elif uri == "ledger://auth/audit":
+            rows = await conn.fetch(
+                """
+                SELECT audit_id, event_type, agent_id, token_id,
+                       failure_reason, occurred_at
+                FROM auth_audit_log
+                ORDER BY occurred_at DESC
+                LIMIT 200
+                """
+            )
+            return _json([dict(r) for r in rows])
 
         else:
             return _json({"error": f"Unknown resource: {uri}"})

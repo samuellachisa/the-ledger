@@ -14,6 +14,9 @@ from uuid import uuid4
 
 import pytest
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 from src.aggregates.loan_application import LoanApplicationAggregate
 from src.aggregates.compliance_record import ComplianceRecordAggregate
 from src.commands.handlers import (

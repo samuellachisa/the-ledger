@@ -217,6 +217,12 @@ class ProjectionDaemon:
                         lag_events,
                         labels={"projection_name": projection_name},
                     )
+                    # Also emit time-based lag for SLO dashboards
+                    get_metrics().gauge(
+                        "projection_lag_ms",
+                        lag_events * 100.0,  # rough estimate: 100ms per event
+                        labels={"projection_name": projection_name},
+                    )
                     if lag_events > 1000:
                         logger.warning(
                             "Projection %s lag SLO breach: %d events behind",

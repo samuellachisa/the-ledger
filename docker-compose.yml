@@ -7,10 +7,20 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: apex_financial
+      # WAL archiving for PITR
+      POSTGRES_INITDB_ARGS: "--wal-segsize=16"
+    command: >
+      postgres
+        -c wal_level=replica
+        -c archive_mode=on
+        -c archive_command='cp %p /var/lib/postgresql/wal_archive/%f'
+        -c max_wal_senders=3
+        -c wal_keep_size=256
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - postgres_wal_archive:/var/lib/postgresql/wal_archive
       - ./src/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -39,11 +49,32 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/apex_financial
+      METRICS_PORT: "9090"
+      ENABLE_INTEGRITY_MONITOR: "true"
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "9090:9090"
     stdin_open: true
     tty: true
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    depends_on:
+      - mcp_server
+
 volumes:
   postgres_data:
+  postgres_wal_archive:
+  prometheus_data:

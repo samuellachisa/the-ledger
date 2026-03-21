@@ -32,15 +32,28 @@ def event_loop():
 
 @pytest_asyncio.fixture(scope="session")
 async def db_pool():
-    """Create a connection pool for the test database."""
-    pool = await asyncpg.create_pool(TEST_DB_URL, min_size=2, max_size=10)
-    yield pool
-    await pool.close()
+    """Create a connection pool for the test database. Yields None if DB unavailable."""
+    try:
+        pool = await asyncpg.create_pool(TEST_DB_URL, min_size=2, max_size=10)
+        yield pool
+        await pool.close()
+    except Exception:
+        yield None
+
+
+@pytest_asyncio.fixture(scope="session")
+async def require_db_pool(db_pool):
+    """Session-scoped pool that skips if DB is unavailable. Use in DB-dependent tests."""
+    if db_pool is None:
+        pytest.skip("Database not available")
+    return db_pool
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_schema(db_pool):
     """Apply schema to test database once per session."""
+    if db_pool is None:
+        return
     schema_path = os.path.join(os.path.dirname(__file__), "..", "src", "schema.sql")
     with open(schema_path) as f:
         schema_sql = f.read()
@@ -54,6 +67,9 @@ async def clean_tables(db_pool):
     Truncate all mutable tables before each test for isolation.
     Uses TRUNCATE ... CASCADE for correctness and resets checkpoints.
     """
+    if db_pool is None:
+        yield
+        return
     async with db_pool.acquire() as conn:
         await conn.execute("""
             TRUNCATE TABLE
@@ -83,7 +99,16 @@ async def clean_tables(db_pool):
 
 @pytest_asyncio.fixture
 async def event_store(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     return EventStore(db_pool, UpcasterRegistry())
+
+
+@pytest_asyncio.fixture
+async def require_db(db_pool):
+    """Fixture that skips the test if the database is not available."""
+    if db_pool is None:
+        pytest.skip("Database not available")
 
 
 @pytest_asyncio.fixture
@@ -94,36 +119,48 @@ async def handler(event_store):
 
 @pytest_asyncio.fixture
 async def saga_manager(db_pool, event_store, handler):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.saga import SagaManager
     return SagaManager(db_pool, event_store, handler)
 
 
 @pytest_asyncio.fixture
 async def dead_letter(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.dead_letter import DeadLetterQueue
     return DeadLetterQueue(db_pool)
 
 
 @pytest_asyncio.fixture
 async def token_store(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.auth import TokenStore
     return TokenStore(db_pool)
 
 
 @pytest_asyncio.fixture
 async def rate_limiter(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.ratelimit import RateLimiter
     return RateLimiter(db_pool)
 
 
 @pytest_asyncio.fixture
 async def snapshot_store(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.snapshots import SnapshotStore
     return SnapshotStore(db_pool)
 
 
 @pytest_asyncio.fixture
 async def migration_runner(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.migrations import MigrationRunner
     from src.upcasting.registry import UpcasterRegistry
     return MigrationRunner(db_pool, UpcasterRegistry())
@@ -131,18 +168,24 @@ async def migration_runner(db_pool):
 
 @pytest_asyncio.fixture
 async def stream_archiver(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.archival import StreamArchiver
     return StreamArchiver(db_pool)
 
 
 @pytest_asyncio.fixture
 async def idempotency_store(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.idempotency import IdempotencyStore
     return IdempotencyStore(db_pool)
 
 
 @pytest_asyncio.fixture
 async def erasure_handler(db_pool, event_store):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.erasure import ErasureHandler
     return ErasureHandler(db_pool, event_store)
 
@@ -155,6 +198,8 @@ async def circuit_breaker():
 
 @pytest_asyncio.fixture
 async def leader_election(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.leader_election import LeaderElection
     election = LeaderElection(db_pool, "test-component")
     yield election
@@ -163,12 +208,16 @@ async def leader_election(db_pool):
 
 @pytest_asyncio.fixture
 async def integrity_monitor(db_pool, event_store):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.integrity.monitor import IntegrityMonitor
     return IntegrityMonitor(db_pool, event_store, check_interval_seconds=999)
 
 
 @pytest_asyncio.fixture
 async def schema_checker(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
     from src.schema_compat import SchemaCompatibilityChecker
     from src.upcasting.registry import UpcasterRegistry
     return SchemaCompatibilityChecker(db_pool, UpcasterRegistry())

@@ -16,10 +16,12 @@ from src.commands.handlers import (
     FinalizeApplicationCommand,
     FinalizeComplianceCommand,
     GenerateDecisionCommand,
+    LoadAgentContextCommand,
     RecordComplianceCheckCommand,
     RecordCreditAnalysisCommand,
     RecordFraudCheckCommand,
     RequestComplianceCheckCommand,
+    StartAgentSessionCommand,
     SubmitApplicationCommand,
 )
 from src.models.events import DecisionOutcome
@@ -239,6 +241,102 @@ def get_tool_definitions() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="withdraw_application",
+            description=(
+                "Withdraw a loan application. Can be called from any non-terminal state. "
+                "PRECONDITIONS: Application must not be in FinalApproved, Denied, or Withdrawn. "
+                "ERRORS: InvalidStateTransitionError."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["application_id", "withdrawn_by", "reason"],
+                "properties": {
+                    "application_id": {"type": "string", "format": "uuid"},
+                    "withdrawn_by": {"type": "string"},
+                    "reason": {"type": "string"},
+                },
+            },
+        ),
+        Tool(
+            name="start_agent_session",
+            description=(
+                "Start a new agent session for processing a loan application. "
+                "Returns session_id required for load_agent_context and generate_decision. "
+                "ERRORS: BusinessRuleViolationError."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["application_id", "agent_model", "agent_version"],
+                "properties": {
+                    "application_id": {"type": "string", "format": "uuid"},
+                    "agent_model": {"type": "string"},
+                    "agent_version": {"type": "string"},
+                    "session_config": {"type": "object"},
+                },
+            },
+        ),
+        Tool(
+            name="load_agent_context",
+            description=(
+                "Load application context into an agent session. "
+                "PRECONDITIONS: session_id must exist and be in Initializing status. "
+                "Must be called before generate_decision. "
+                "ERRORS: InvalidStateTransitionError."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["session_id", "application_id", "context_sources", "context_snapshot"],
+                "properties": {
+                    "session_id": {"type": "string", "format": "uuid"},
+                    "application_id": {"type": "string", "format": "uuid"},
+                    "context_sources": {"type": "array", "items": {"type": "string"}},
+                    "context_snapshot": {"type": "object"},
+                    "loaded_stream_positions": {"type": "object"},
+                },
+            },
+        ),
+        Tool(
+            name="run_what_if",
+            description=(
+                "Run a counterfactual what-if analysis on a loan application. "
+                "Injects hypothetical events and shows how the outcome would differ. "
+                "Read-only — does not modify any state. "
+                "ERRORS: AggregateNotFoundError."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["application_id", "counterfactual_event_type"],
+                "properties": {
+                    "application_id": {"type": "string", "format": "uuid"},
+                    "counterfactual_event_type": {
+                        "type": "string",
+                        "enum": ["CreditAnalysisCompleted", "FraudCheckCompleted"],
+                    },
+                    "credit_score": {"type": "integer", "minimum": 300, "maximum": 850},
+                    "debt_to_income_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+                    "fraud_risk_score": {"type": "number", "minimum": 0, "maximum": 1},
+                    "fraud_passed": {"type": "boolean"},
+                },
+            },
+        ),
+        Tool(
+            name="generate_regulatory_package",
+            description=(
+                "Generate a self-contained, tamper-evident regulatory package for an application. "
+                "Contains all events, projections, and cryptographic integrity proof. "
+                "For ECOA/FCRA audit submissions. "
+                "ERRORS: AggregateNotFoundError."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["application_id"],
+                "properties": {
+                    "application_id": {"type": "string", "format": "uuid"},
+                    "generated_by": {"type": "string"},
+                },
+            },
+        ),
     ]
 
 
@@ -251,6 +349,10 @@ async def dispatch_tool(
     erasure=None,
 ) -> CallToolResult:
     """Route a tool call to the appropriate handler."""
+    # Strip auth token from arguments before any processing to avoid logging it.
+    # Exception: refresh_token needs _auth_token as its primary argument.
+    if name != "refresh_token":
+        arguments = {k: v for k, v in arguments.items() if k != "_auth_token"}
     if name == "submit_application":
         idem_key = arguments.get("idempotency_key")
         if idem_key and idempotency:
@@ -365,6 +467,78 @@ async def dispatch_tool(
             "streams_processed": streams_processed,
             "status": "Erased",
         })
+
+    elif name == "withdraw_application":
+        events = await handler._store.load_stream("LoanApplication", UUID(arguments["application_id"]))
+        from src.aggregates.loan_application import LoanApplicationAggregate
+        app = LoanApplicationAggregate.load(UUID(arguments["application_id"]), events)
+        app.withdraw(withdrawn_by=arguments["withdrawn_by"], reason=arguments["reason"])
+        await handler._store.append(
+            aggregate_type=LoanApplicationAggregate.aggregate_type,
+            aggregate_id=UUID(arguments["application_id"]),
+            events=app.pending_events,
+            expected_version=app.version - len(app.pending_events),
+        )
+        return _ok({"status": "Withdrawn"})
+
+    elif name == "start_agent_session":
+        session_id = await handler.handle_start_agent_session(StartAgentSessionCommand(
+            application_id=UUID(arguments["application_id"]),
+            agent_model=arguments["agent_model"],
+            agent_version=arguments["agent_version"],
+            session_config=arguments.get("session_config"),
+        ))
+        return _ok({"session_id": str(session_id), "status": "Initializing"})
+
+    elif name == "load_agent_context":
+        await handler.handle_load_agent_context(LoadAgentContextCommand(
+            session_id=UUID(arguments["session_id"]),
+            application_id=UUID(arguments["application_id"]),
+            context_sources=arguments["context_sources"],
+            context_snapshot=arguments["context_snapshot"],
+            loaded_stream_positions=arguments.get("loaded_stream_positions", {}),
+        ))
+        return _ok({"status": "ContextLoaded"})
+
+    elif name == "run_what_if":
+        from src.what_if.projector import WhatIfProjector
+        from src.models.events import (
+            CreditAnalysisCompleted, FraudCheckCompleted,
+        )
+        from uuid import uuid4
+        app_id = UUID(arguments["application_id"])
+        cf_type = arguments["counterfactual_event_type"]
+
+        if cf_type == "CreditAnalysisCompleted":
+            cf_event = CreditAnalysisCompleted(
+                aggregate_id=app_id,
+                credit_score=int(arguments.get("credit_score", 700)),
+                debt_to_income_ratio=float(arguments.get("debt_to_income_ratio", 0.3)),
+            )
+        elif cf_type == "FraudCheckCompleted":
+            cf_event = FraudCheckCompleted(
+                aggregate_id=app_id,
+                fraud_risk_score=float(arguments.get("fraud_risk_score", 0.1)),
+                passed=bool(arguments.get("fraud_passed", True)),
+                flags=[],
+            )
+        else:
+            return _err("InvalidArgument", f"Unsupported counterfactual_event_type: {cf_type}")
+
+        projector = WhatIfProjector(handler._store)
+        result = await projector.run_what_if(app_id, [cf_event])
+        return _ok(result)
+
+    elif name == "generate_regulatory_package":
+        from src.regulatory.package import generate_regulatory_package
+        app_id = UUID(arguments["application_id"])
+        package = await generate_regulatory_package(
+            pool=handler._store._pool,
+            event_store=handler._store,
+            application_id=app_id,
+            generated_by=arguments.get("generated_by", "mcp-tool"),
+        )
+        return _ok(package)
 
     else:
         return _err("UnknownTool", f"Tool '{name}' not found")

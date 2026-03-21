@@ -67,6 +67,13 @@ TOOL_ROLES: dict[str, Role] = {
     "finalize_compliance": Role.COMPLIANCE_OFFICER,
     "generate_decision": Role.DECISION_AGENT,
     "finalize_application": Role.DECISION_AGENT,
+    "withdraw_application": Role.SUBMITTER,
+    "start_agent_session": Role.DECISION_AGENT,
+    "load_agent_context": Role.DECISION_AGENT,
+    "run_what_if": Role.READ_ONLY,
+    "generate_regulatory_package": Role.COMPLIANCE_OFFICER,
+    "erase_personal_data": Role.ADMIN,
+    "refresh_token": Role.READ_ONLY,  # any authenticated agent can refresh their own token
 }
 
 # Role hierarchy: higher roles include lower ones

@@ -16,6 +16,9 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 from src.commands.handlers import (
     CommandHandler,
     RecordComplianceCheckCommand,

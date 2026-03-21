@@ -12,6 +12,9 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 from src.projections.application_summary import handle_application_summary, get_application_summary
 from src.projections.agent_performance import handle_agent_performance, get_agent_performance
 from src.projections.compliance_audit import handle_compliance_audit, get_state_at

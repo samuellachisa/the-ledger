@@ -13,6 +13,9 @@ from uuid import uuid4
 
 import pytest
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 from src.aggregates.agent_session import AgentSessionAggregate
 from src.integrity.gas_town import AgentContextReconstructor
 from src.models.events import AgentSessionStatus, BusinessRuleViolationError

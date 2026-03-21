@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules.yml"
+
+scrape_configs:
+  - job_name: "apex-financial-mcp"
+    static_configs:
+      - targets: ["mcp_server:9090"]
+    metrics_path: /metrics

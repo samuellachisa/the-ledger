@@ -9,6 +9,9 @@ from uuid import uuid4
 
 import pytest
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 from src.commands.handlers import (
     CommandHandler,
     FinalizeApplicationCommand,

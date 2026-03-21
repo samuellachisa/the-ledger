@@ -13,7 +13,7 @@ import os
 import asyncpg
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import CallToolResult, GetResourceResult, Resource, Tool
+from mcp.types import CallToolResult, ReadResourceResult, Resource, Tool
 
 from src.auth.tokens import AuthError, TokenStore
 from src.commands.handlers import CommandHandler
@@ -50,6 +50,9 @@ _rate_limiter: RateLimiter | None = None
 _dead_letter: DeadLetterQueue | None = None
 _idempotency: IdempotencyStore | None = None
 _erasure: ErasureHandler | None = None
+_integrity_monitor = None
+_saga_manager = None
+_outbox_relay = None
 
 
 def _get_deps():
@@ -96,13 +99,18 @@ async def call_tool(name: str, arguments: dict) -> CallToolResult:
         span.set_attribute("tool_name", name)
         try:
             await _authenticate(arguments, name)
+            # Strip auth token BEFORE validation so it doesn't fail schema checks
+            # (dispatch_tool also strips it, but we need it gone for validation)
+            arguments_for_dispatch = arguments
+            if name != "refresh_token":
+                arguments_for_dispatch = {k: v for k, v in arguments.items() if k != "_auth_token"}
             # Validate arguments against inputSchema before dispatch
             tool_defs = {t.name: t for t in get_tool_definitions()}
             if name in tool_defs:
-                validate_arguments(name, arguments, tool_defs[name].inputSchema)
+                validate_arguments(name, arguments_for_dispatch, tool_defs[name].inputSchema)
             result = await dispatch_tool(
                 name=name,
-                arguments=arguments,
+                arguments=arguments_for_dispatch,
                 handler=handler,
                 token_store=_token_store,
                 idempotency=_idempotency,
@@ -149,7 +157,7 @@ async def list_resources() -> list[Resource]:
 
 
 @app.read_resource()
-async def read_resource(uri: str) -> GetResourceResult:
+async def read_resource(uri: str) -> ReadResourceResult:
     pool, event_store, _ = _get_deps()
     try:
         return await dispatch_resource(
@@ -157,12 +165,13 @@ async def read_resource(uri: str) -> GetResourceResult:
             pool=pool,
             event_store=event_store,
             dead_letter=_dead_letter,
+            integrity_monitor=_integrity_monitor,
         )
     except Exception as e:
         import json
         from mcp.types import TextContent
         logger.exception("Error reading resource %s", uri)
-        return GetResourceResult(contents=[
+        return ReadResourceResult(contents=[
             TextContent(type="text", text=json.dumps({"error": str(e)}))
         ])
 
@@ -195,6 +204,7 @@ async def create_server(
 ) -> None:
     global _pool, _read_pool, _event_store, _handler, _reconstructor
     global _token_store, _rate_limiter, _dead_letter, _idempotency, _erasure
+    global _integrity_monitor, _saga_manager, _outbox_relay
 
     if wait_for_db:
         await _wait_for_db(database_url)
@@ -227,6 +237,10 @@ async def create_server(
     if enable_auth:
         _token_store = TokenStore(_pool)
         _rate_limiter = RateLimiter(_pool)
+
+    # Always initialize integrity monitor (reads only, no background task until start())
+    from src.integrity.monitor import IntegrityMonitor
+    _integrity_monitor = IntegrityMonitor(_pool, _event_store)
 
     logger.info(
         "MCP Server initialized (auth=%s, pool=%d-%d)",
@@ -274,6 +288,23 @@ async def main() -> None:
         cleanup_job = TokenCleanupJob(_pool)
         await cleanup_job.start()
 
+    # Start saga manager
+    if _pool and _event_store and _handler:
+        from src.saga import SagaManager
+        from src.saga.loan_processing_saga import SagaConfig
+        _saga_manager = SagaManager(_pool, _event_store, _handler, dead_letter=_dead_letter)
+        await _saga_manager.start()
+
+    # Start outbox relay (InMemoryPublisher by default; swap for real broker in prod)
+    if _pool:
+        from src.outbox.relay import OutboxRelay, InMemoryPublisher
+        _outbox_relay = OutboxRelay(_pool, InMemoryPublisher())
+        await _outbox_relay.start()
+
+    # Start integrity monitor
+    if _integrity_monitor and os.environ.get("ENABLE_INTEGRITY_MONITOR", "true").lower() == "true":
+        await _integrity_monitor.start()
+
     # Start archival scheduler
     archival_scheduler = None
     if os.environ.get("ENABLE_ARCHIVAL", "false").lower() == "true" and _pool:
@@ -294,6 +325,12 @@ async def main() -> None:
     finally:
         if cleanup_job:
             await cleanup_job.stop()
+        if _saga_manager:
+            await _saga_manager.stop()
+        if _outbox_relay:
+            await _outbox_relay.stop()
+        if _integrity_monitor:
+            await _integrity_monitor.stop()
         if archival_scheduler:
             await archival_scheduler.stop()
         if erasure_scheduler:

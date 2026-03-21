@@ -30,6 +30,9 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
+# All tests in this module require a live database connection.
+pytestmark = pytest.mark.usefixtures("require_db")
+
 import src.mcp.server as mcp_server
 from src.commands.handlers import CommandHandler
 from src.event_store import EventStore

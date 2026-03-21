@@ -150,24 +150,25 @@ class OutboxRelay:
 
     async def _process_batch(self) -> int:
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT outbox_id, event_id, aggregate_type, event_type,
-                       payload, metadata, retry_count, max_retries
-                FROM outbox
-                WHERE status = 'pending'
-                ORDER BY created_at
-                LIMIT $1
-                FOR UPDATE SKIP LOCKED
-                """,
-                BATCH_SIZE,
-            )
+            async with conn.transaction():
+                rows = await conn.fetch(
+                    """
+                    SELECT outbox_id, event_id, aggregate_type, event_type,
+                           payload, metadata, retry_count, max_retries
+                    FROM outbox
+                    WHERE status = 'pending'
+                    ORDER BY created_at
+                    LIMIT $1
+                    FOR UPDATE SKIP LOCKED
+                    """,
+                    BATCH_SIZE,
+                )
 
-        if not rows:
-            return 0
+                if not rows:
+                    return 0
 
-        for row in rows:
-            await self._process_entry(row)
+                for row in rows:
+                    await self._process_entry_in_conn(conn, row)
 
         return len(rows)
 
@@ -221,3 +222,37 @@ class OutboxRelay:
                     "Outbox entry %s failed (attempt %d/%d): %s",
                     outbox_id, new_retry, row["max_retries"], e,
                 )
+
+    async def _process_entry_in_conn(self, conn: asyncpg.Connection, row: asyncpg.Record) -> None:
+        """Process one outbox entry within an existing transaction/connection."""
+        outbox_id = row["outbox_id"]
+        try:
+            await self._circuit.call(
+                self._publisher.publish(
+                    event_type=row["event_type"],
+                    aggregate_type=row["aggregate_type"],
+                    payload=dict(row["payload"]),
+                    metadata=dict(row["metadata"]),
+                )
+            )
+            await conn.execute(
+                "UPDATE outbox SET status = 'published', published_at = NOW() WHERE outbox_id = $1",
+                outbox_id,
+            )
+            self._published_count += 1
+            get_metrics().increment("outbox_published_total")
+        except CircuitOpenError:
+            raise
+        except Exception as e:
+            new_retry = row["retry_count"] + 1
+            new_status = "failed" if new_retry >= row["max_retries"] else "pending"
+            await conn.execute(
+                "UPDATE outbox SET retry_count = $1, status = $2, last_error = $3 WHERE outbox_id = $4",
+                new_retry, new_status, str(e)[:500], outbox_id,
+            )
+            if new_status == "failed":
+                self._failed_count += 1
+                get_metrics().increment("outbox_failed_total")
+                logger.error("Outbox entry %s permanently failed after %d retries: %s", outbox_id, new_retry, e)
+            else:
+                logger.warning("Outbox entry %s failed (attempt %d/%d): %s", outbox_id, new_retry, row["max_retries"], e)
