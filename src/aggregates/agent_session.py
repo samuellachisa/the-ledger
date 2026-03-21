@@ -15,6 +15,7 @@ from uuid import UUID
 from src.aggregates.base import AggregateRoot
 from src.models.events import (
     AgentContextLoaded,
+    AgentCreditAnalysisObserved,
     AgentDecisionRecorded,
     AgentSessionCompleted,
     AgentSessionFailed,
@@ -40,6 +41,7 @@ class AgentSessionAggregate(AggregateRoot):
         self.context_sources: list[str] = []
         self.context_snapshot: dict = {}
         self.loaded_stream_positions: dict[str, int] = {}  # Gas Town checkpoints
+        self.context_model_version: str | None = None  # model version recorded at context load
         self.decision: DecisionOutcome | None = None
         self.confidence_score: float | None = None
         self.crash_event_id: UUID | None = None
@@ -74,6 +76,7 @@ class AgentSessionAggregate(AggregateRoot):
         context_sources: list[str],
         context_snapshot: dict,
         loaded_stream_positions: dict[str, int],
+        model_version: str | None = None,
     ) -> None:
         if self.status not in (AgentSessionStatus.INITIALIZING, AgentSessionStatus.PROCESSING):
             raise InvalidStateTransitionError(
@@ -85,6 +88,7 @@ class AgentSessionAggregate(AggregateRoot):
             context_sources=context_sources,
             context_snapshot=context_snapshot,
             loaded_stream_positions=loaded_stream_positions,
+            model_version=model_version,
         ))
 
     def record_decision(
@@ -94,6 +98,7 @@ class AgentSessionAggregate(AggregateRoot):
         confidence_score: float,
         reasoning: str,
         processing_duration_ms: int,
+        model_version: str | None = None,
     ) -> None:
         # Gas Town: context must be loaded before any decision
         if not self.context_loaded:
@@ -106,6 +111,14 @@ class AgentSessionAggregate(AggregateRoot):
             raise InvalidStateTransitionError(
                 self.aggregate_type, str(self.status), "Processing"
             )
+        # Model version guard: decision model must match the context model
+        if self.context_model_version is not None and model_version is not None:
+            if model_version != self.context_model_version:
+                raise BusinessRuleViolationError(
+                    "ModelVersionMismatch",
+                    f"Decision model '{model_version}' does not match context model "
+                    f"'{self.context_model_version}'. Reload context with the correct model version.",
+                )
         self._raise_event(AgentDecisionRecorded(
             aggregate_id=self.aggregate_id,
             application_id=application_id,
@@ -135,6 +148,45 @@ class AgentSessionAggregate(AggregateRoot):
             error_type=error_type,
             error_message=error_message,
             last_checkpoint=self.loaded_stream_positions or None,
+        ))
+
+    def observe_credit_analysis(
+        self,
+        application_id: UUID,
+        credit_score: int,
+        debt_to_income_ratio: float,
+        loan_application_stream_version: int,
+        model_version: str | None = None,
+    ) -> None:
+        """
+        Guard + event for when the agent session observes a credit analysis result.
+
+        The session must be active (Initializing, ContextLoaded, or Processing) —
+        it makes no sense to update a completed or crashed session's checkpoint.
+        Raises InvalidStateTransitionError if the session is in a terminal state.
+
+        Updates the Gas Town checkpoint for the LoanApplication stream so that
+        on crash recovery the agent knows it already processed this credit result.
+        """
+        _active = (
+            AgentSessionStatus.INITIALIZING,
+            AgentSessionStatus.CONTEXT_LOADED,
+            AgentSessionStatus.PROCESSING,
+        )
+        if self.status not in _active:
+            raise InvalidStateTransitionError(
+                self.aggregate_type,
+                str(self.status),
+                "Processing",
+                "Cannot observe credit analysis on a session that is not active.",
+            )
+        self._raise_event(AgentCreditAnalysisObserved(
+            aggregate_id=self.aggregate_id,
+            application_id=application_id,
+            credit_score=credit_score,
+            debt_to_income_ratio=debt_to_income_ratio,
+            model_version=model_version,
+            loan_application_stream_version=loan_application_stream_version,
         ))
 
     def resume(self, application_id: UUID, crash_event_id: UUID | None = None) -> None:
@@ -167,6 +219,11 @@ class AgentSessionAggregate(AggregateRoot):
         self.context_sources = event.context_sources
         self.context_snapshot = event.context_snapshot
         self.loaded_stream_positions = event.loaded_stream_positions
+        self.context_model_version = event.model_version
+
+    def when_AgentCreditAnalysisObserved(self, event: AgentCreditAnalysisObserved) -> None:
+        # Update Gas Town checkpoint: record how far we've read the LoanApplication stream
+        self.loaded_stream_positions[str(event.application_id)] = event.loan_application_stream_version
 
     def when_AgentDecisionRecorded(self, event: AgentDecisionRecorded) -> None:
         self.status = AgentSessionStatus.PROCESSING

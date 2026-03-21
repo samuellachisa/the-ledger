@@ -293,6 +293,7 @@ def get_tool_definitions() -> list[Tool]:
                     "context_sources": {"type": "array", "items": {"type": "string"}},
                     "context_snapshot": {"type": "object"},
                     "loaded_stream_positions": {"type": "object"},
+                    "model_version": {"type": "string"},
                 },
             },
         ),
@@ -480,12 +481,7 @@ async def dispatch_tool(
         from src.aggregates.loan_application import LoanApplicationAggregate
         app = LoanApplicationAggregate.load(UUID(arguments["application_id"]), events)
         app.withdraw(withdrawn_by=arguments["withdrawn_by"], reason=arguments["reason"])
-        await handler._store.append(
-            aggregate_type=LoanApplicationAggregate.aggregate_type,
-            aggregate_id=UUID(arguments["application_id"]),
-            events=app.pending_events,
-            expected_version=app.version - len(app.pending_events),
-        )
+        await handler._append(app)
         return _ok({"status": "Withdrawn"})
 
     elif name == "start_agent_session":
@@ -504,6 +500,7 @@ async def dispatch_tool(
             context_sources=arguments["context_sources"],
             context_snapshot=arguments["context_snapshot"],
             loaded_stream_positions=arguments.get("loaded_stream_positions", {}),
+            model_version=arguments.get("model_version"),
         ))
         return _ok({"status": "ContextLoaded"})
 

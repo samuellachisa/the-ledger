@@ -92,3 +92,13 @@ class UpcasterRegistry:
                 **payload,
                 "loaded_stream_positions": payload.get("loaded_stream_positions", {}),
             }
+
+        # AgentContextLoaded v2 → v3
+        # v2 had no model_version field.
+        # Inference strategy: null — we cannot determine which model was intended historically.
+        @self.register("AgentContextLoaded", from_version=2)
+        def upcast_agent_context_v2_to_v3(payload: dict) -> dict:
+            return {
+                **payload,
+                "model_version": payload.get("model_version", None),
+            }

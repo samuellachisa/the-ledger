@@ -140,6 +140,7 @@ class LoadAgentContextCommand:
     context_sources: list[str]
     context_snapshot: dict
     loaded_stream_positions: dict[str, int]
+    model_version: str | None = None
     correlation_id: UUID | None = None
     causation_id: UUID | None = None
 
@@ -212,6 +213,28 @@ class CommandHandler:
             analysis_duration_ms=cmd.analysis_duration_ms,
         )
         await self._append(aggregate, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
+
+        # If an agent session is already active for this application, update its
+        # Gas Town checkpoint so it knows the credit analysis result is available.
+        if aggregate.agent_session_id is not None:
+            sess_events = await self._store.load_stream(
+                AgentSessionAggregate.aggregate_type, aggregate.agent_session_id
+            )
+            if sess_events:
+                session = AgentSessionAggregate.load(aggregate.agent_session_id, sess_events)
+                session.observe_credit_analysis(
+                    application_id=cmd.application_id,
+                    credit_score=cmd.credit_score,
+                    debt_to_income_ratio=cmd.debt_to_income_ratio,
+                    # version after the loan application append is original_version + pending count
+                    loan_application_stream_version=aggregate.version,
+                    model_version=cmd.model_version,
+                )
+                await self._append(
+                    session,
+                    correlation_id=cmd.correlation_id,
+                    causation_id=cmd.causation_id,
+                )
 
     async def handle_record_fraud_check(self, cmd: RecordFraudCheckCommand) -> None:
         events = await self._load_stream_or_raise(
@@ -316,6 +339,7 @@ class CommandHandler:
             confidence_score=cmd.confidence_score,
             reasoning=cmd.reasoning,
             processing_duration_ms=0,
+            model_version=cmd.model_version,
         )
         await self._append(session, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)
 
@@ -370,5 +394,6 @@ class CommandHandler:
             context_sources=cmd.context_sources,
             context_snapshot=cmd.context_snapshot,
             loaded_stream_positions=cmd.loaded_stream_positions,
+            model_version=cmd.model_version,
         )
         await self._append(session, correlation_id=cmd.correlation_id, causation_id=cmd.causation_id)

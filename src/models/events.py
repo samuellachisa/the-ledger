@@ -348,10 +348,29 @@ class AgentSessionStarted(DomainEvent):
 class AgentContextLoaded(DomainEvent):
     aggregate_type: str = "AgentSession"
     event_type: str = "AgentContextLoaded"
+    schema_version: int = 3
     application_id: UUID
     context_sources: list[str]  # e.g. ["credit_bureau", "fraud_db", "compliance_rules"]
     context_snapshot: dict[str, Any] = Field(default_factory=dict)
     loaded_stream_positions: dict[str, int] = Field(default_factory=dict)  # Gas Town checkpoints
+    model_version: Optional[str] = None  # which model will process this context
+
+
+class AgentCreditAnalysisObserved(DomainEvent):
+    """
+    Recorded on AgentSession when a credit analysis result is available for the
+    application the session is processing.
+
+    Gas Town: updates the session's stream position checkpoint for the
+    LoanApplication stream so crash recovery knows how far the agent had read.
+    """
+    aggregate_type: str = "AgentSession"
+    event_type: str = "AgentCreditAnalysisObserved"
+    application_id: UUID
+    credit_score: int
+    debt_to_income_ratio: float
+    model_version: Optional[str] = None
+    loan_application_stream_version: int  # checkpoint: version of LoanApplication stream after this event
 
 
 class AgentDecisionRecorded(DomainEvent):
@@ -485,6 +504,7 @@ EVENT_REGISTRY: dict[str, type[DomainEvent]] = {
     "ApplicationWithdrawn": ApplicationWithdrawn,
     "AgentSessionStarted": AgentSessionStarted,
     "AgentContextLoaded": AgentContextLoaded,
+    "AgentCreditAnalysisObserved": AgentCreditAnalysisObserved,
     "AgentDecisionRecorded": AgentDecisionRecorded,
     "AgentSessionCompleted": AgentSessionCompleted,
     "AgentSessionFailed": AgentSessionFailed,

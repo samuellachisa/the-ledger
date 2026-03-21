@@ -62,3 +62,15 @@ def register_all(registry: UpcasterRegistry) -> None:
             **payload,
             "loaded_stream_positions": payload.get("loaded_stream_positions", {}),
         }
+
+    # -------------------------------------------------------------------------
+    # AgentContextLoaded v2 → v3
+    # Change: added model_version (which model will process this context)
+    # Inference strategy: null — cannot determine which model was intended historically.
+    # -------------------------------------------------------------------------
+    @registry.register("AgentContextLoaded", from_version=2)
+    def upcast_agent_context_v2_to_v3(payload: dict) -> dict:
+        return {
+            **payload,
+            "model_version": payload.get("model_version", None),
+        }
