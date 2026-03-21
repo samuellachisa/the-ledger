@@ -169,10 +169,10 @@ async def read_resource(uri: str) -> ReadResourceResult:
         )
     except Exception as e:
         import json
-        from mcp.types import TextContent
+        from mcp.types import TextResourceContents
         logger.exception("Error reading resource %s", uri)
         return ReadResourceResult(contents=[
-            TextContent(type="text", text=json.dumps({"error": str(e)}))
+            TextResourceContents(type="text", text=json.dumps({"error": str(e)}), uri="ledger://error")
         ])
 
 
@@ -212,9 +212,27 @@ async def create_server(
     db_ssl = os.environ.get("DB_SSL", "").lower()
     ssl_param = db_ssl if db_ssl in ("require", "verify-ca", "verify-full") else None
 
+    async def _init_conn(conn: asyncpg.Connection) -> None:
+        import json
+        from uuid import UUID
+        from datetime import datetime, date
+
+        def _default(obj):
+            if isinstance(obj, UUID):
+                return str(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+        def _encoder(val):
+            return json.dumps(val, default=_default)
+
+        await conn.set_type_codec("jsonb", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+        await conn.set_type_codec("json", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+
     _pool = await asyncpg.create_pool(
         database_url, min_size=pool_min_size, max_size=pool_max_size,
-        ssl=ssl_param,
+        ssl=ssl_param, init=_init_conn,
     )
 
     # Optional read replica pool
@@ -223,7 +241,7 @@ async def create_server(
     if read_url:
         _read_pool = await asyncpg.create_pool(
             read_url, min_size=pool_min_size, max_size=pool_max_size,
-            ssl=ssl_param,
+            ssl=ssl_param, init=_init_conn,
         )
         logger.info("Read replica pool initialized from DB_READ_URL")
 

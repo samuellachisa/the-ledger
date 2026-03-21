@@ -19,7 +19,7 @@ from src.aggregates.audit_ledger import AuditLedgerAggregate
 from src.aggregates.compliance_record import ComplianceRecordAggregate
 from src.aggregates.loan_application import LoanApplicationAggregate
 from src.event_store import EventStore
-from src.models.events import DecisionOutcome
+from src.models.events import AggregateNotFoundError, DecisionOutcome
 
 # PII fields to encrypt in LoanApplicationSubmitted payloads
 _PII_FIELDS = ["applicant_name", "applicant_id"]
@@ -133,6 +133,13 @@ class CommandHandler:
     def __init__(self, event_store: EventStore):
         self._store = event_store
 
+    async def _load_stream_or_raise(self, aggregate_type: str, aggregate_id: UUID) -> list:
+        """Load stream and raise AggregateNotFoundError if no events exist."""
+        events = await self._store.load_stream(aggregate_type, aggregate_id)
+        if not events:
+            raise AggregateNotFoundError(aggregate_type, aggregate_id)
+        return events
+
     # -------------------------------------------------------------------------
     # Loan Application Commands
     # -------------------------------------------------------------------------
@@ -162,7 +169,7 @@ class CommandHandler:
         return application_id
 
     async def handle_record_credit_analysis(self, cmd: RecordCreditAnalysisCommand) -> None:
-        events = await self._store.load_stream(
+        events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         aggregate = LoanApplicationAggregate.load(cmd.application_id, events)
@@ -185,7 +192,7 @@ class CommandHandler:
         )
 
     async def handle_record_fraud_check(self, cmd: RecordFraudCheckCommand) -> None:
-        events = await self._store.load_stream(
+        events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         aggregate = LoanApplicationAggregate.load(cmd.application_id, events)
@@ -220,7 +227,7 @@ class CommandHandler:
         )
 
         # Link to loan application
-        app_events = await self._store.load_stream(
+        app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
@@ -235,7 +242,7 @@ class CommandHandler:
         return compliance_id
 
     async def handle_record_compliance_check(self, cmd: RecordComplianceCheckCommand) -> None:
-        events = await self._store.load_stream(
+        events = await self._load_stream_or_raise(
             ComplianceRecordAggregate.aggregate_type, cmd.compliance_record_id
         )
         aggregate = ComplianceRecordAggregate.load(cmd.compliance_record_id, events)
@@ -262,7 +269,7 @@ class CommandHandler:
 
     async def handle_finalize_compliance(self, cmd: FinalizeComplianceCommand) -> bool:
         """Finalize compliance and transition loan application to PendingDecision. Returns overall_passed."""
-        comp_events = await self._store.load_stream(
+        comp_events = await self._load_stream_or_raise(
             ComplianceRecordAggregate.aggregate_type, cmd.compliance_record_id
         )
         compliance = ComplianceRecordAggregate.load(cmd.compliance_record_id, comp_events)
@@ -276,7 +283,7 @@ class CommandHandler:
         )
 
         # Transition loan application: ComplianceCheck → PendingDecision
-        app_events = await self._store.load_stream(
+        app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
@@ -293,7 +300,7 @@ class CommandHandler:
         return compliance.overall_passed
 
     async def handle_generate_decision(self, cmd: GenerateDecisionCommand) -> None:
-        app_events = await self._store.load_stream(
+        app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)
@@ -341,7 +348,7 @@ class CommandHandler:
         )
 
     async def handle_finalize_application(self, cmd: FinalizeApplicationCommand) -> None:
-        app_events = await self._store.load_stream(
+        app_events = await self._load_stream_or_raise(
             LoanApplicationAggregate.aggregate_type, cmd.application_id
         )
         app = LoanApplicationAggregate.load(cmd.application_id, app_events)

@@ -245,7 +245,7 @@ async def test_role_authorization(db_pool, token_store):
     raw = await token_store.issue_token("read-only-agent", [Role.READ_ONLY])
     identity = await token_store.verify(raw)
 
-    with pytest.raises(AuthError, match="Forbidden"):
+    with pytest.raises(AuthError, match="lacks role"):
         token_store.require(identity, "generate_decision")
 
 

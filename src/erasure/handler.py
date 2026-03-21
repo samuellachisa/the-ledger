@@ -80,9 +80,10 @@ class ErasureHandler:
                 SELECT DISTINCT e.stream_id, e.aggregate_id
                 FROM events e
                 WHERE e.payload->>'applicant_id' = $1
-                   OR e.aggregate_id = $1
+                   OR e.aggregate_id = $2
                 """,
                 str(applicant_id),
+                applicant_id,
             )
 
         affected_stream_ids = [row["stream_id"] for row in rows]

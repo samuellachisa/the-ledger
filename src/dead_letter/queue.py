@@ -84,7 +84,7 @@ class DeadLetterQueue:
             query = """
                 SELECT dead_letter_id, event_id, global_position, aggregate_type,
                        event_type, source, processor_name, retry_count,
-                       error_type, error_message, created_at
+                       error_type, error_message, created_at, resolved_at
                 FROM dead_letter_events
                 WHERE resolved_at IS NULL
             """

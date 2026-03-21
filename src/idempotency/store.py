@@ -89,10 +89,9 @@ class IdempotencyStore:
             )
 
         if row["status"] == "completed":
-            import json
             return IdempotencyResult(
                 idempotency_key=idempotency_key,
-                result=row["result"],
+                result=row["result"],  # raw TEXT — caller decides how to parse
                 is_duplicate=True,
             )
 

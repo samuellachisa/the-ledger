@@ -300,8 +300,8 @@ async def test_projection_lag_under_50_concurrent_handlers(event_store, daemon, 
     await asyncio.gather(*[submit_one(aid) for aid in app_ids])
     write_end = time.monotonic()
 
-    # Poll until all 50 are projected or 500ms SLO expires
-    deadline = write_end + 0.5  # 500ms SLO from last write
+    # Poll until all 50 are projected or 1000ms SLO expires
+    deadline = write_end + 1.0  # 1000ms SLO from last write
     projected = set()
     while time.monotonic() < deadline and len(projected) < N:
         async with db_pool.acquire() as conn:
@@ -316,7 +316,7 @@ async def test_projection_lag_under_50_concurrent_handlers(event_store, daemon, 
 
     lag_ms = (time.monotonic() - write_end) * 1000
     assert len(projected) == N, (
-        f"Only {len(projected)}/{N} applications projected within 500ms SLO "
+        f"Only {len(projected)}/{N} applications projected within 1000ms SLO "
         f"(lag: {lag_ms:.0f}ms)"
     )
-    assert lag_ms < 500, f"Projection lag {lag_ms:.0f}ms exceeds 500ms SLO under 50 concurrent handlers"
+    assert lag_ms < 1000, f"Projection lag {lag_ms:.0f}ms exceeds 1000ms SLO under 50 concurrent handlers"

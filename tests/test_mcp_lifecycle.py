@@ -49,18 +49,41 @@ async def init_mcp_server(db_pool):
     """
     Initialise the MCP server module-level globals so call_tool() and
     read_resource() work without a real network connection.
+    Also wires up a ProjectionDaemon so projection tables are populated.
     """
+    from src.projections.daemon import ProjectionDaemon
+    from src.projections.application_summary import handle_application_summary
+    from src.projections.compliance_audit import handle_compliance_audit
+    from src.projections.agent_performance import handle_agent_performance
+
     store = EventStore(db_pool, UpcasterRegistry())
     mcp_server._pool = db_pool
     mcp_server._event_store = store
     mcp_server._handler = CommandHandler(store)
     mcp_server._reconstructor = AgentContextReconstructor(store)
+
+    # Wire up projection daemon for resource reads
+    daemon = ProjectionDaemon(db_pool, store)
+    daemon.register("ApplicationSummary", handle_application_summary)
+    daemon.register("ComplianceAudit", handle_compliance_audit)
+    daemon.register("AgentPerformance", handle_agent_performance)
+    mcp_server._projection_daemon = daemon
+
     yield
+
     # Teardown: leave pool open (managed by conftest)
     mcp_server._pool = None
     mcp_server._event_store = None
     mcp_server._handler = None
     mcp_server._reconstructor = None
+    mcp_server._projection_daemon = None
+
+
+async def flush_projections():
+    """Process all pending projection events. Call before reading resources."""
+    daemon = getattr(mcp_server, "_projection_daemon", None)
+    if daemon:
+        await daemon._process_batch()
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +132,7 @@ async def test_full_lifecycle_via_call_tool_and_read_resource(db_pool):
     app_id = data["application_id"]
 
     # Resource: application summary must exist immediately after submission
+    await flush_projections()
     res = await mcp_server.read_resource(f"ledger://applications/{app_id}")
     summary = _parse_resource(res)
     assert summary.get("status") == "Submitted", f"Unexpected summary: {summary}"
@@ -189,6 +213,7 @@ async def test_full_lifecycle_via_call_tool_and_read_resource(db_pool):
     assert fc_data["overall_passed"] is True
 
     # Resource: compliance history must be populated
+    await flush_projections()
     res = await mcp_server.read_resource(f"ledger://applications/{app_id}/compliance")
     compliance_history = _parse_resource(res)
     assert isinstance(compliance_history, (list, dict))
@@ -219,6 +244,7 @@ async def test_full_lifecycle_via_call_tool_and_read_resource(db_pool):
     assert _parse(r)["status"] == "ApplicationFinalized"
 
     # ── 10. Verify final state via resource (projection, not stream) ─────────
+    await flush_projections()
     res = await mcp_server.read_resource(f"ledger://applications/{app_id}")
     final_summary = _parse_resource(res)
     assert final_summary.get("status") == "FinalApproved", (

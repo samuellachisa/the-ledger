@@ -7,11 +7,19 @@ Default: postgresql://postgres:postgres@localhost:5432/apex_financial_test
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 
 import asyncpg
 import pytest
 import pytest_asyncio
+
+# Load .env so TEST_DATABASE_URL is available without setting it in the shell
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from src.event_store import EventStore
 from src.upcasting.registry import UpcasterRegistry
@@ -21,56 +29,93 @@ TEST_DB_URL = os.environ.get(
     "postgresql://postgres:postgres@localhost:5432/apex_financial_test"
 )
 
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Single event loop for the entire test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+# ---------------------------------------------------------------------------
+# Check DB availability once at import time (sync) so we can skip early
+# ---------------------------------------------------------------------------
+_DB_AVAILABLE: bool | None = None
 
 
-@pytest_asyncio.fixture(scope="session")
-async def db_pool():
-    """Create a connection pool for the test database. Yields None if DB unavailable."""
+def _check_db_available() -> bool:
+    global _DB_AVAILABLE
+    if _DB_AVAILABLE is not None:
+        return _DB_AVAILABLE
+    import socket
     try:
-        pool = await asyncpg.create_pool(TEST_DB_URL, min_size=2, max_size=10)
-        yield pool
-        await pool.close()
+        from urllib.parse import urlparse
+        p = urlparse(TEST_DB_URL)
+        s = socket.create_connection((p.hostname, p.port or 5432), timeout=2)
+        s.close()
+        _DB_AVAILABLE = True
     except Exception:
-        yield None
+        _DB_AVAILABLE = False
+    return _DB_AVAILABLE
 
 
-@pytest_asyncio.fixture(scope="session")
-async def require_db_pool(db_pool):
-    """Session-scoped pool that skips if DB is unavailable. Use in DB-dependent tests."""
-    if db_pool is None:
-        pytest.skip("Database not available")
-    return db_pool
+# ---------------------------------------------------------------------------
+# Schema setup — run once synchronously before any tests
+# ---------------------------------------------------------------------------
 
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_schema(db_pool):
-    """Apply schema to test database once per session."""
-    if db_pool is None:
+def pytest_configure(config):
+    """Apply schema once before the test session starts."""
+    if not _check_db_available():
         return
-    schema_path = os.path.join(os.path.dirname(__file__), "..", "src", "schema.sql")
-    with open(schema_path) as f:
-        schema_sql = f.read()
-    async with db_pool.acquire() as conn:
-        await conn.execute(schema_sql)
+    import asyncio as _asyncio
+
+    async def _apply():
+        conn = await asyncpg.connect(TEST_DB_URL)
+        schema_path = os.path.join(os.path.dirname(__file__), "..", "src", "schema.sql")
+        with open(schema_path) as f:
+            sql = f.read()
+        await conn.execute(sql)
+        await conn.close()
+
+    try:
+        _asyncio.run(_apply())
+    except Exception as e:
+        print(f"\n[conftest] Schema setup failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Per-test pool (function-scoped to avoid cross-loop issues)
+# ---------------------------------------------------------------------------
+
+@pytest_asyncio.fixture
+async def db_pool():
+    """Fresh connection pool per test. Yields None if DB unavailable."""
+    if not _check_db_available():
+        yield None
+        return
+
+    async def _init_conn(conn):
+        from uuid import UUID
+        from datetime import datetime, date
+
+        def _default(obj):
+            if isinstance(obj, UUID):
+                return str(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+        def _encoder(val):
+            return json.dumps(val, default=_default)
+
+        await conn.set_type_codec("jsonb", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+        await conn.set_type_codec("json", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+
+    pool = await asyncpg.create_pool(TEST_DB_URL, min_size=2, max_size=5, init=_init_conn)
+    yield pool
+    await pool.close()
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def clean_tables(db_pool):
-    """
-    Truncate all mutable tables before each test for isolation.
-    Uses TRUNCATE ... CASCADE for correctness and resets checkpoints.
-    """
-    if db_pool is None:
+async def clean_tables():
+    """Truncate all mutable tables before each test for isolation."""
+    if not _check_db_available():
         yield
         return
-    async with db_pool.acquire() as conn:
+    conn = await asyncpg.connect(TEST_DB_URL)
+    try:
         await conn.execute("""
             TRUNCATE TABLE
                 auth_audit_log,
@@ -94,7 +139,16 @@ async def clean_tables(db_pool):
         """)
         await conn.execute("UPDATE projection_checkpoints SET last_position = 0")
         await conn.execute("UPDATE saga_checkpoints SET last_position = 0")
+    finally:
+        await conn.close()
     yield
+
+
+@pytest_asyncio.fixture
+async def require_db(db_pool):
+    """Skip the test if the database is not available."""
+    if db_pool is None:
+        pytest.skip("Database not available")
 
 
 @pytest_asyncio.fixture
@@ -102,13 +156,6 @@ async def event_store(db_pool):
     if db_pool is None:
         pytest.skip("Database not available")
     return EventStore(db_pool, UpcasterRegistry())
-
-
-@pytest_asyncio.fixture
-async def require_db(db_pool):
-    """Fixture that skips the test if the database is not available."""
-    if db_pool is None:
-        pytest.skip("Database not available")
 
 
 @pytest_asyncio.fixture
@@ -162,7 +209,6 @@ async def migration_runner(db_pool):
     if db_pool is None:
         pytest.skip("Database not available")
     from src.migrations import MigrationRunner
-    from src.upcasting.registry import UpcasterRegistry
     return MigrationRunner(db_pool, UpcasterRegistry())
 
 
@@ -193,7 +239,7 @@ async def erasure_handler(db_pool, event_store):
 @pytest_asyncio.fixture
 async def circuit_breaker():
     from src.circuit_breaker import CircuitBreaker
-    return CircuitBreaker("test-breaker", failure_threshold=3, recovery_timeout_seconds=1.0)
+    return CircuitBreaker("test-breaker", failure_threshold=3, recovery_timeout_seconds=1.0, success_threshold=1)
 
 
 @pytest_asyncio.fixture
@@ -219,7 +265,6 @@ async def schema_checker(db_pool):
     if db_pool is None:
         pytest.skip("Database not available")
     from src.schema_compat import SchemaCompatibilityChecker
-    from src.upcasting.registry import UpcasterRegistry
     return SchemaCompatibilityChecker(db_pool, UpcasterRegistry())
 
 
@@ -227,7 +272,6 @@ async def schema_checker(db_pool):
 def field_encryptor():
     import base64
     key = base64.b64encode(b"a" * 32).decode()
-    import os
     os.environ["FIELD_ENCRYPTION_KEY"] = key
     from src.encryption import FieldEncryptor
     return FieldEncryptor.from_env()

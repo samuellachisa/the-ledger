@@ -95,35 +95,50 @@ async def test_concurrent_double_approval_exactly_one_wins(db_pool):
     """
     Two agents concurrently attempt to approve the same application.
     Exactly one must succeed; the other must get OptimisticConcurrencyError.
-    The final state must be FinalApproved (not double-approved).
+    The final state must have exactly one DecisionGenerated event.
+
+    NOTE: asyncio is single-threaded, so we simulate the race by pre-loading
+    the aggregate in both agents before either appends, then racing the appends.
     """
     store = EventStore(db_pool, UpcasterRegistry())
     handler = CommandHandler(store)
     app_id, session_id, _ = await _setup_application_at_pending_decision(handler, store)
 
-    # Both agents generate a decision at the same version
-    events = await store.load_stream("LoanApplication", app_id)
-    version_before_decision = len(events)
+    # Pre-load the aggregate state for both agents at the same version
+    # This simulates both agents reading the state before either commits
+    app_events = await store.load_stream("LoanApplication", app_id)
+    expected_version = len(app_events)
+
+    from src.aggregates.loan_application import LoanApplicationAggregate
+    from src.aggregates.agent_session import AgentSessionAggregate
+    from src.models.events import DecisionGenerated
 
     results = {"success": 0, "conflict": 0, "errors": []}
 
-    async def agent_approve(agent_id: int):
+    async def agent_append_decision(agent_id: int):
+        """Directly append a DecisionGenerated event at the pre-loaded version."""
         try:
-            await handler.handle_generate_decision(GenerateDecisionCommand(
-                application_id=app_id,
-                agent_session_id=session_id,
+            decision_event = DecisionGenerated(
+                aggregate_id=app_id,
                 outcome=DecisionOutcome.APPROVE,
                 confidence_score=0.88,
                 reasoning=f"Agent {agent_id} approves",
                 model_version="gpt-4",
-            ))
+                agent_session_id=session_id,
+            )
+            await store.append(
+                aggregate_type="LoanApplication",
+                aggregate_id=app_id,
+                events=[decision_event],
+                expected_version=expected_version,
+            )
             results["success"] += 1
         except OptimisticConcurrencyError:
             results["conflict"] += 1
         except Exception as e:
             results["errors"].append(str(e))
 
-    await asyncio.gather(agent_approve(1), agent_approve(2))
+    await asyncio.gather(agent_append_decision(1), agent_append_decision(2))
 
     assert results["errors"] == [], f"Unexpected errors: {results['errors']}"
     assert results["success"] == 1, f"Expected 1 success, got {results['success']}"

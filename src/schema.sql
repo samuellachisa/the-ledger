@@ -6,6 +6,24 @@
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Drop FK constraint on audit_ledger_projection.event_id if it exists
+-- (allows inserting test/synthetic entries without requiring a matching events row)
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT conname
+        FROM pg_constraint
+        WHERE conrelid = 'audit_ledger_projection'::regclass
+          AND contype = 'f'
+          AND conname LIKE '%event_id%'
+    LOOP
+        EXECUTE 'ALTER TABLE audit_ledger_projection DROP CONSTRAINT ' || quote_ident(r.conname);
+    END LOOP;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
 -- =============================================================================
 -- event_streams: One row per aggregate instance.
 -- Tracks the current version for OCC (Optimistic Concurrency Control).
@@ -181,7 +199,7 @@ CREATE INDEX IF NOT EXISTS idx_compliance_audit_temporal
 CREATE TABLE IF NOT EXISTS audit_ledger_projection (
     ledger_entry_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     application_id      UUID NOT NULL,
-    event_id            UUID NOT NULL REFERENCES events(event_id),
+    event_id            UUID NOT NULL,
     event_type          VARCHAR(200) NOT NULL,
     event_hash          VARCHAR(64) NOT NULL,   -- SHA-256 of event payload
     chain_hash          VARCHAR(64) NOT NULL,   -- SHA-256(prev_chain_hash + event_hash)

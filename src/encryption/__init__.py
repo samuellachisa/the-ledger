@@ -1,3 +1,3 @@
-from src.encryption.field import FieldEncryptor
+from src.encryption.field import EncryptionError, FieldEncryptor
 
-__all__ = ["FieldEncryptor"]
+__all__ = ["EncryptionError", "FieldEncryptor"]

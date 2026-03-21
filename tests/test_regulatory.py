@@ -191,7 +191,7 @@ async def test_chain_break_detection(db_pool):
         await conn.execute(
             """
             UPDATE audit_ledger_projection
-            SET chain_hash = 'deadbeef' || chain_hash[9:]
+            SET chain_hash = 'deadbeef' || substring(chain_hash, 9)
             WHERE application_id = $1 AND sequence_number = 2
             """,
             app_id,

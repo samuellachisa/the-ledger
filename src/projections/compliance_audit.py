@@ -6,11 +6,23 @@ Stores a snapshot at each compliance event, enabling:
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import asyncpg
 
 from src.event_store import StoredEvent
+
+
+def _parse_dt(val) -> datetime | None:
+    """Coerce a value to a timezone-aware datetime for asyncpg TIMESTAMPTZ."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    if isinstance(val, str):
+        dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return None
 
 
 async def handle_compliance_audit(conn: asyncpg.Connection, event: StoredEvent) -> None:
@@ -20,9 +32,13 @@ async def handle_compliance_audit(conn: asyncpg.Connection, event: StoredEvent) 
 
     payload = event.payload
     record_id = event.aggregate_id
-    occurred_at = event.metadata.get("occurred_at") or event.recorded_at
+    occurred_at = _parse_dt(event.metadata.get("occurred_at") or event.recorded_at)
 
     if event.event_type == "ComplianceRecordCreated":
+        from uuid import UUID as _UUID
+        app_id_val = payload.get("application_id")
+        if isinstance(app_id_val, str):
+            app_id_val = _UUID(app_id_val)
         await conn.execute(
             """
             INSERT INTO compliance_audit_projection
@@ -32,7 +48,7 @@ async def handle_compliance_audit(conn: asyncpg.Connection, event: StoredEvent) 
             ON CONFLICT DO NOTHING
             """,
             record_id,
-            payload.get("application_id"),
+            app_id_val,
             occurred_at,
             payload.get("officer_id"),
         )
@@ -123,6 +139,7 @@ async def get_state_at(
     Temporal query: return compliance state as it was at a given timestamp.
     This is the key feature of the ComplianceAuditView.
     """
+    ts = _parse_dt(timestamp) or timestamp
     row = await conn.fetchrow(
         """
         SELECT cap.*
@@ -133,7 +150,7 @@ async def get_state_at(
         LIMIT 1
         """,
         application_id,
-        timestamp,
+        ts,
     )
     return dict(row) if row else None
 

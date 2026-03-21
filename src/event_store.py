@@ -165,44 +165,79 @@ class EventStore:
         async with self._pool.acquire() as conn:
             async with conn.transaction():
                 # Step 1: Upsert stream and atomically check+increment version.
-                # INSERT ... ON CONFLICT handles first-time stream creation.
-                # The UPDATE only fires if current_version matches expected_version.
+                # For new streams (expected_version=0): INSERT.
+                # For existing streams: UPDATE only if current_version matches.
+                # We use two separate statements to unambiguously detect OCC failures.
                 new_version = expected_version + len(events)
 
-                result = await conn.fetchrow(
-                    """
-                    INSERT INTO event_streams (stream_id, aggregate_type, aggregate_id, current_version)
-                    VALUES (gen_random_uuid(), $1, $2, $3)
-                    ON CONFLICT (aggregate_type, aggregate_id) DO UPDATE
-                        SET current_version = $3,
-                            updated_at = NOW()
-                        WHERE event_streams.current_version = $4
-                    RETURNING stream_id, current_version
-                    """,
-                    aggregate_type,
-                    aggregate_id,
-                    new_version,
-                    expected_version,
-                )
-
-                if result is None:
-                    # The WHERE clause failed — version mismatch
-                    actual = await conn.fetchval(
-                        "SELECT current_version FROM event_streams "
-                        "WHERE aggregate_type = $1 AND aggregate_id = $2",
-                        aggregate_type, aggregate_id
+                if expected_version == 0:
+                    # New stream — INSERT (will fail with unique violation if stream exists)
+                    try:
+                        result = await conn.fetchrow(
+                            """
+                            INSERT INTO event_streams (stream_id, aggregate_type, aggregate_id, current_version)
+                            VALUES (gen_random_uuid(), $1, $2, $3)
+                            RETURNING stream_id, current_version
+                            """,
+                            aggregate_type,
+                            aggregate_id,
+                            new_version,
+                        )
+                    except asyncpg.UniqueViolationError:
+                        # Stream already exists — OCC conflict
+                        # Transaction is now aborted; look up actual version on a fresh connection
+                        get_metrics().increment("occ_conflicts_total", labels={"aggregate_type": aggregate_type})
+                        try:
+                            async with self._pool.acquire() as lookup_conn:
+                                actual_v = await lookup_conn.fetchval(
+                                    "SELECT current_version FROM event_streams "
+                                    "WHERE aggregate_type = $1 AND aggregate_id = $2",
+                                    aggregate_type, aggregate_id
+                                )
+                                sid = await lookup_conn.fetchval(
+                                    "SELECT stream_id FROM event_streams "
+                                    "WHERE aggregate_type = $1 AND aggregate_id = $2",
+                                    aggregate_type, aggregate_id
+                                )
+                        except Exception:
+                            actual_v, sid = -1, None
+                        raise OptimisticConcurrencyError(
+                            stream_id=sid or uuid4(),
+                            expected=expected_version,
+                            actual=actual_v or -1,
+                        )
+                else:
+                    # Existing stream — lock the row first, then UPDATE only if version matches.
+                    # SELECT FOR UPDATE ensures concurrent transactions serialize on this row,
+                    # preventing two transactions from both seeing the same current_version.
+                    locked = await conn.fetchrow(
+                        """
+                        SELECT stream_id, current_version FROM event_streams
+                        WHERE aggregate_type = $1 AND aggregate_id = $2
+                        FOR UPDATE
+                        """,
+                        aggregate_type,
+                        aggregate_id,
                     )
-                    # Fetch stream_id for error reporting
-                    stream_id = await conn.fetchval(
-                        "SELECT stream_id FROM event_streams "
-                        "WHERE aggregate_type = $1 AND aggregate_id = $2",
-                        aggregate_type, aggregate_id
-                    )
-                    get_metrics().increment("occ_conflicts_total", labels={"aggregate_type": aggregate_type})
-                    raise OptimisticConcurrencyError(
-                        stream_id=stream_id or uuid4(),
-                        expected=expected_version,
-                        actual=actual or -1,
+                    if locked is None or locked["current_version"] != expected_version:
+                        actual_version = locked["current_version"] if locked else -1
+                        locked_stream_id = locked["stream_id"] if locked else None
+                        get_metrics().increment("occ_conflicts_total", labels={"aggregate_type": aggregate_type})
+                        raise OptimisticConcurrencyError(
+                            stream_id=locked_stream_id or uuid4(),
+                            expected=expected_version,
+                            actual=actual_version,
+                        )
+                    result = await conn.fetchrow(
+                        """
+                        UPDATE event_streams
+                        SET current_version = $1, updated_at = NOW()
+                        WHERE aggregate_type = $2 AND aggregate_id = $3
+                        RETURNING stream_id, current_version
+                        """,
+                        new_version,
+                        aggregate_type,
+                        aggregate_id,
                     )
 
                 stream_id: UUID = result["stream_id"]                # Step 2: Insert events
@@ -257,6 +292,8 @@ class EventStore:
                         metadata,
                     )
 
+                # Instrument inside the with block (before return)
+                get_metrics().increment("events_appended_total", value=len(events), labels={"aggregate_type": aggregate_type})
                 return new_version
 
         # Instrument after transaction commits

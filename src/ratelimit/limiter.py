@@ -99,14 +99,14 @@ class RateLimiter:
                     last_refill = last_refill.replace(tzinfo=timezone.utc)
                 elapsed = (now - last_refill).total_seconds()
                 refilled = min(
-                    row["capacity"],
-                    row["tokens"] + elapsed * row["refill_rate"],
+                    float(row["capacity"]),
+                    float(row["tokens"]) + elapsed * float(row["refill_rate"]),
                 )
 
                 if refilled < tokens:
                     # Calculate when enough tokens will be available
                     deficit = tokens - refilled
-                    retry_after = deficit / row["refill_rate"]
+                    retry_after = deficit / float(row["refill_rate"])
                     raise RateLimitExceededError(agent_id, action, retry_after)
 
                 new_tokens = refilled - tokens
@@ -161,9 +161,9 @@ class RateLimiter:
         if last_refill.tzinfo is None:
             last_refill = last_refill.replace(tzinfo=timezone.utc)
         elapsed = (now - last_refill).total_seconds()
-        current = min(row["capacity"], row["tokens"] + elapsed * row["refill_rate"])
+        current = min(float(row["capacity"]), float(row["tokens"]) + elapsed * float(row["refill_rate"]))
         return {
             "tokens": round(current, 4),
-            "capacity": row["capacity"],
-            "refill_rate": row["refill_rate"],
+            "capacity": float(row["capacity"]),
+            "refill_rate": float(row["refill_rate"]),
         }

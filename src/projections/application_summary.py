@@ -4,9 +4,23 @@ SLO: < 500ms lag from event to projection update.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import asyncpg
 
 from src.event_store import StoredEvent
+
+
+def _parse_dt(val) -> datetime | None:
+    """Coerce a value to a timezone-aware datetime for asyncpg TIMESTAMPTZ."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    if isinstance(val, str):
+        dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return None
 
 
 async def handle_application_summary(conn: asyncpg.Connection, event: StoredEvent) -> None:
@@ -31,7 +45,7 @@ async def handle_application_summary(conn: asyncpg.Connection, event: StoredEven
             agg_id,
             payload.get("applicant_name"),
             payload.get("loan_amount"),
-            event.metadata.get("occurred_at"),
+            _parse_dt(event.metadata.get("occurred_at")),
         )
 
     elif event.event_type == "CreditAnalysisRequested":

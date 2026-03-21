@@ -49,7 +49,6 @@ import asyncpg
 
 from src.commands.handlers import (
     CommandHandler,
-    FinalizeComplianceCommand,
     RequestComplianceCheckCommand,
 )
 from src.event_store import EventStore, StoredEvent
@@ -315,8 +314,9 @@ class SagaManager:
         """
         ComplianceRecordFinalized → finalize_compliance on the loan application.
 
-        The compliance record aggregate has finished. The saga now calls
-        finalize_compliance to transition the loan application to PendingDecision.
+        The compliance record aggregate has finished. The saga now transitions
+        the loan application to PendingDecision directly (the compliance record
+        is already finalized — we just need to update the loan application).
         """
         compliance_record_id = event.aggregate_id
 
@@ -339,27 +339,43 @@ class SagaManager:
             return
 
         logger.info(
-            "Saga %s: ComplianceRecordFinalized for record %s — finalizing compliance on application %s",
+            "Saga %s: ComplianceRecordFinalized for record %s — transitioning application %s to PendingDecision",
             saga.saga_id, compliance_record_id, saga.application_id,
         )
 
+        from src.aggregates.compliance_record import ComplianceRecordAggregate
+        from src.aggregates.loan_application import LoanApplicationAggregate
+
         for attempt in range(MAX_STEP_RETRIES):
             try:
-                await self._handler.handle_finalize_compliance(
-                    FinalizeComplianceCommand(
-                        compliance_record_id=compliance_record_id,
-                        application_id=saga.application_id,
-                        officer_id=self._config.default_officer_id,
-                        notes="Auto-finalized by LoanProcessingSaga",
-                    )
+                # Load the already-finalized compliance record to get overall_passed
+                comp_events = await self._store.load_stream(
+                    ComplianceRecordAggregate.aggregate_type, compliance_record_id
                 )
+                comp = ComplianceRecordAggregate.load(compliance_record_id, comp_events)
+
+                # Transition loan application: ComplianceCheck → PendingDecision
+                app_events = await self._store.load_stream(
+                    LoanApplicationAggregate.aggregate_type, saga.application_id
+                )
+                app = LoanApplicationAggregate.load(saga.application_id, app_events)
+                app.set_compliance_result(comp.overall_passed)
+                app.move_to_pending_decision()
+
+                await self._store.append(
+                    aggregate_type=LoanApplicationAggregate.aggregate_type,
+                    aggregate_id=saga.application_id,
+                    events=app.pending_events,
+                    expected_version=app.version - len(app.pending_events),
+                )
+
                 saga.step = SagaStep.COMPLIANCE_FINALIZED
                 saga.last_causation_id = event.event_id
                 saga.retry_count = 0
                 await self._save_saga(saga)
                 logger.info(
-                    "Saga %s: compliance finalized, application %s now PendingDecision",
-                    saga.saga_id, saga.application_id,
+                    "Saga %s: application %s now PendingDecision (compliance_passed=%s)",
+                    saga.saga_id, saga.application_id, comp.overall_passed,
                 )
                 return
             except InvalidStateTransitionError as e:

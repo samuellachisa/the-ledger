@@ -358,7 +358,14 @@ async def dispatch_tool(
         if idem_key and idempotency:
             existing = await idempotency.check_and_reserve(idem_key)
             if existing:
-                return _ok(existing.result)
+                import json as _json
+                cached = existing.result
+                if isinstance(cached, str):
+                    try:
+                        cached = _json.loads(cached)
+                    except Exception:
+                        pass
+                return _ok(cached)
 
         app_id = await handler.handle_submit_application(SubmitApplicationCommand(
             applicant_name=arguments["applicant_name"],

@@ -14,7 +14,7 @@ import time
 from uuid import UUID
 
 import asyncpg
-from mcp.types import ReadResourceResult, Resource, TextContent
+from mcp.types import ReadResourceResult, Resource, TextContent, TextResourceContents
 
 from src.event_store import EventStore
 from src.integrity.audit_chain import run_integrity_check
@@ -48,7 +48,7 @@ def get_resource_definitions() -> list[Resource]:
 
 def _json(data) -> ReadResourceResult:
     return ReadResourceResult(contents=[
-        TextContent(type="text", text=json.dumps(data, default=str))
+        TextResourceContents(type="text", text=json.dumps(data, default=str), uri="ledger://result")
     ])
 
 
@@ -164,7 +164,7 @@ async def dispatch_resource(
         elif uri == "ledger://metrics/prometheus":
             from src.observability.exporters import PrometheusExporter
             text = PrometheusExporter(get_metrics()).export()
-            return ReadResourceResult(contents=[TextContent(type="text", text=text)])
+            return ReadResourceResult(contents=[TextResourceContents(type="text", text=text, uri="ledger://metrics/prometheus")])
 
         elif uri.startswith("ledger://events/correlation/"):
             corr_id = UUID(uri.split("/")[-1])
