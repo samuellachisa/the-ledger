@@ -29,14 +29,18 @@ from src.models.events import (
 async def test_double_decision_exactly_one_succeeds(event_store):
     """
     Two concurrent tasks append a DecisionGenerated event to the same stream
-    at expected_version=1. Exactly one must succeed; the other must fail with
-    OptimisticConcurrencyError.
+    at expected_version=3. Exactly one must succeed (landing at stream_position=4);
+    the other must fail with OptimisticConcurrencyError(expected=3, actual=4).
+    Final stream length must be 4.
     """
     application_id = uuid4()
     applicant_id = uuid4()
     agent_session_id = uuid4()
 
-    # Setup: append initial event to create stream at version 1
+    from src.models.events import CreditAnalysisRequested, CreditAnalysisCompleted
+
+    # Seed 3 events so stream is at version 3 before the concurrent race.
+    # position 1: LoanApplicationSubmitted
     submitted = LoanApplicationSubmitted(
         aggregate_id=application_id,
         applicant_name="Test Applicant",
@@ -52,12 +56,39 @@ async def test_double_decision_exactly_one_succeeds(event_store):
         expected_version=0,
     )
 
-    # Verify stream is at version 1
-    version = await event_store.stream_version("LoanApplication", application_id)
-    assert version == 1
+    # position 2: CreditAnalysisRequested
+    credit_requested = CreditAnalysisRequested(
+        aggregate_id=application_id,
+        requested_by="test_agent",
+    )
+    await event_store.append(
+        aggregate_type="LoanApplication",
+        aggregate_id=application_id,
+        events=[credit_requested],
+        expected_version=1,
+    )
 
-    # Both tasks will try to append at expected_version=1
-    results = {"success": 0, "conflict": 0, "errors": []}
+    # position 3: CreditAnalysisCompleted
+    credit_completed = CreditAnalysisCompleted(
+        aggregate_id=application_id,
+        credit_score=750,
+        debt_to_income_ratio=0.28,
+        model_version="credit-model-v3",
+    )
+    await event_store.append(
+        aggregate_type="LoanApplication",
+        aggregate_id=application_id,
+        events=[credit_completed],
+        expected_version=2,
+    )
+
+    # Verify stream is at version 3 before the race
+    version = await event_store.stream_version("LoanApplication", application_id)
+    assert version == 3
+
+    # Both tasks race to append at expected_version=3.
+    # Winner lands at stream_position=4; loser gets OCC(expected=3, actual=4).
+    results = {"success": 0, "conflict": 0, "errors": [], "winning_version": None}
 
     async def attempt_decision(task_id: int):
         decision = DecisionGenerated(
@@ -69,17 +100,18 @@ async def test_double_decision_exactly_one_succeeds(event_store):
             agent_session_id=agent_session_id,
         )
         try:
-            await event_store.append(
+            new_version = await event_store.append(
                 aggregate_type="LoanApplication",
                 aggregate_id=application_id,
                 events=[decision],
-                expected_version=1,  # Both tasks expect version 1
+                expected_version=3,  # Both tasks expect version 3
             )
             results["success"] += 1
+            results["winning_version"] = new_version  # must be 4
         except OptimisticConcurrencyError as e:
             results["conflict"] += 1
-            assert e.expected_version == 1
-            assert e.actual_version == 2  # The other task already incremented
+            assert e.expected_version == 3
+            assert e.actual_version == 4  # winner already incremented to position 4
             assert e.suggested_action == "reload_and_retry"
         except Exception as e:
             results["errors"].append(str(e))
@@ -94,14 +126,19 @@ async def test_double_decision_exactly_one_succeeds(event_store):
     assert results["success"] == 1, f"Expected exactly 1 success, got {results['success']}"
     assert results["conflict"] == 1, f"Expected exactly 1 conflict, got {results['conflict']}"
 
-    # Verify final stream version is 2 (only one event appended)
-    final_version = await event_store.stream_version("LoanApplication", application_id)
-    assert final_version == 2
+    # Winning task's event landed at stream_position=4
+    assert results["winning_version"] == 4
 
-    # Verify only one DecisionGenerated event exists
+    # Final stream length is 4 (3 seed events + 1 winning DecisionGenerated)
+    final_version = await event_store.stream_version("LoanApplication", application_id)
+    assert final_version == 4
+
+    # Exactly one DecisionGenerated in stream — no duplicate decisions
     events = await event_store.load_stream("LoanApplication", application_id)
+    assert len(events) == 4                                          # stream length = 4
     decision_events = [e for e in events if e.event_type == "DecisionGenerated"]
-    assert len(decision_events) == 1
+    assert len(decision_events) == 1                                 # no duplicate decisions
+    # stream_position=4 confirmed via final_version above (version == position for single-event appends)
 
 
 @pytest.mark.asyncio
