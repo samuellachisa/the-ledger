@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0024
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Finance Services
+Industry:         Transportation
+Tax ID:           13-5487028
+Incorporated:     January 31, 2014
+Employees:        199
+
+Address:          4664 Broad Ave
+                  Riverside, AL 66244
+Phone:            (774) 985-9121
+Email:            info@financeservices.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    7.20%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $76.62M
+Net Income:       $5.60M
+Total Assets:     $72.05M
+EBITDA:           $10.76M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  RECOVERING
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

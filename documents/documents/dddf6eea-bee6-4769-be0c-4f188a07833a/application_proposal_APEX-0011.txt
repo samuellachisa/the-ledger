@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0011
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Peak Manufacturing Partners
+Industry:         Education
+Tax ID:           65-3955087
+Incorporated:     February 19, 2019
+Employees:        309
+
+Address:          8131 Main Dr
+                  Salem, CA 57472
+Phone:            (850) 670-2506
+Email:            info@peakmanufacturingpartners.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    6.54%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $96.80M
+Net Income:       $16.28M
+Total Assets:     $99.72M
+EBITDA:           $19.30M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  GROWTH
+Risk Level:       MEDIUM
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Metro Retail Group
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $58.19M
+Cost of Goods Sold                                      $31.28M
+----------------------------------------------------------------------
+Gross Profit                                            $26.91M
+
+Operating Expenses:
+  Salaries and Benefits                                  $9.77M
+  Marketing and Sales                                    $6.53M
+  General and Administrative                             $5.20M
+  Depreciation                                           $2.80M
+  Amortization                                          $612.0K
+----------------------------------------------------------------------
+Total Operating Expenses                                $24.91M
+
+Operating Income                                         $2.00M
+
+EBITDA                                                   $5.41M
+
+Non-Operating Items:
+  Interest Expense                                      $863.1K
+  Interest Income                                       $544.0K
+----------------------------------------------------------------------
+Income Before Taxes                                      $1.68M
+Income Tax Expense (21.0%)                             $352.6K
+======================================================================
+NET INCOME                                               $1.33M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0022
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Summit Finance Ltd
+Industry:         Agriculture
+Tax ID:           43-1879109
+Incorporated:     December 28, 2012
+Employees:        212
+
+Address:          343 Park Ave
+                  Fairview, TX 87182
+Phone:            (531) 216-2854
+Email:            info@summitfinanceltd.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    7.91%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $51.95M
+Net Income:       $825.6K
+Total Assets:     $51.38M
+EBITDA:           $6.44M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  DECLINING
+Risk Level:       HIGH
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

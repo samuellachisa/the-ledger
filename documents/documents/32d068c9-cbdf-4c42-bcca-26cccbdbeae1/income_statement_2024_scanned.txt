@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Media Services
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $65.76M
+Cost of Goods Sold                                      $37.03M
+----------------------------------------------------------------------
+Gross Profit                                            $28.74M
+
+Operating Expenses:
+  Salaries and Benefits                                  $9.56M
+  Marketing and Sales                                    $4.49M
+  General and Administrative                             $5.71M
+  Depreciation                                           $2.59M
+  Amortization                                           $1.01M
+----------------------------------------------------------------------
+Total Operating Expenses                                $23.35M
+
+Operating Income                                         $5.38M
+
+EBITDA                                                   $8.98M
+
+Non-Operating Items:
+  Interest Expense                                      $805.5K
+  Interest Income                                       $776.2K
+----------------------------------------------------------------------
+Income Before Taxes                                      $5.35M
+Income Tax Expense (21.0%)                              $1.12M
+======================================================================
+NET INCOME                                               $4.23M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

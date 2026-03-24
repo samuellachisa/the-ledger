@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,United Media Ltd,
+,,
+Revenue,"$76,866,489.08",100.00%
+Cost of Goods Sold,"$38,059,475.66",49.51%
+Gross Profit,"$38,807,013.42",50.49%
+,,
+Operating Expenses,"$27,250,285.48",35.45%
+Operating Income,"$11,556,727.94",15.03%
+,,
+Interest Expense,"$1,302,607.04",
+Interest Income,"$535,365.00",
+,,
+Income Before Taxes,"$10,789,485.91",14.04%
+Income Tax Expense,"$2,265,792.04",2.95%
+NET INCOME,"$8,523,693.87",11.09%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,United Media Ltd,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$12,874,699.02",
+  Accounts Receivable,"$11,476,335.02",
+Total Current Assets,"$25,888,363.82",
+,,
+Non-Current Assets:,,
+  PP&E,"$26,184,202.96",
+  Intangible Assets,"$6,366,239.79",
+Total Non-Current Assets,"$32,550,442.75",
+TOTAL ASSETS,"$56,789,336.64",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$6,186,333.85",
+  Accrued Expenses,"$4,012,636.67",
+  Short-term Debt,"$7,248,264.01",
+Total Current Liabilities,"$19,841,984.01",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$13,217,747.38",
+Total Non-Current Liabilities,"$13,217,747.38",
+TOTAL LIABILITIES,"$29,934,368.58",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$26,854,968.06",
+TOTAL LIABILITIES & EQUITY,"$56,789,336.64",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,United Media Ltd,
+,,
+Liquidity Ratios,,
+Current Ratio,1.79,x
+Quick Ratio,1.79,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,1.11,x
+Debt-to-Assets,52.71%,
+Interest Coverage,11.73,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),20.80%,
+Return on Equity (ROE),43.98%,
+Gross Margin,36.50%,
+Operating Margin,21.84%,
+Net Margin,15.37%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.35,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,United Media Ltd,,
+,,,
+,2023,2024,2025
+Revenue,"$52,061,470.25","$64,743,860.66","$76,866,489.08"
+Net Income,"$9,314,314.88","$6,427,844.28","$11,811,442.27"
+Total Assets,"$44,108,289.61","$73,668,611.64","$56,789,336.64"
+EBITDA,"$12,599,545.58","$11,631,809.57","$16,791,235.30"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,24.36%,18.72%
+

@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0029
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     First Logistics Services
+Industry:         Hospitality
+Tax ID:           96-8391997
+Incorporated:     August 13, 2008
+Employees:        1,450
+
+Address:          3933 Broad Ave
+                  Greenville, AK 50562
+Phone:            (680) 398-6026
+Email:            info@firstlogisticsservices.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    7.14%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $34.62M
+Net Income:       $3.64M
+Total Assets:     $24.87M
+EBITDA:           $5.44M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  STABLE
+Risk Level:       HIGH
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

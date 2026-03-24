@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0004
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Construction Technologies
+Industry:         Technology
+Tax ID:           43-7640184
+Incorporated:     February 17, 2002
+Employees:        529
+
+Address:          5283 Park Ave
+                  Clinton, NE 97782
+Phone:            (933) 521-3910
+Email:            info@constructiontechnologies.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    6.22%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $39.38M
+Net Income:       $-594,582.00
+Total Assets:     $46.43M
+EBITDA:           $6.18M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  DECLINING
+Risk Level:       MEDIUM
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

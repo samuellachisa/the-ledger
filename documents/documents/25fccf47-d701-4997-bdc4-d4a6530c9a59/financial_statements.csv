@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Manufacturing Ltd,
+,,
+Revenue,"$46,237,582.89",100.00%
+Cost of Goods Sold,"$29,168,103.34",63.08%
+Gross Profit,"$17,069,479.55",36.92%
+,,
+Operating Expenses,"$14,205,980.88",30.72%
+Operating Income,"$2,863,498.67",6.19%
+,,
+Interest Expense,"$974,507.20",
+Interest Income,"$403,216.80",
+,,
+Income Before Taxes,"$2,292,208.26",4.96%
+Income Tax Expense,"$481,363.73",1.04%
+NET INCOME,"$1,810,844.53",3.92%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Manufacturing Ltd,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$7,749,613.69",
+  Accounts Receivable,"$5,759,503.66",
+Total Current Assets,"$14,433,869.01",
+,,
+Non-Current Assets:,,
+  PP&E,"$19,091,694.61",
+  Intangible Assets,"$4,289,670.57",
+Total Non-Current Assets,"$23,381,365.18",
+TOTAL ASSETS,"$36,422,143.13",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$3,978,578.42",
+  Accrued Expenses,"$2,301,496.32",
+  Short-term Debt,"$4,076,573.31",
+Total Current Liabilities,"$11,801,277.26",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$9,492,109.97",
+Total Non-Current Liabilities,"$9,492,109.97",
+TOTAL LIABILITIES,"$18,057,865.15",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$18,364,277.98",
+TOTAL LIABILITIES & EQUITY,"$36,422,143.13",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Manufacturing Ltd,
+,,
+Liquidity Ratios,,
+Current Ratio,2.62,x
+Quick Ratio,2.62,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.98,x
+Debt-to-Assets,49.58%,
+Interest Coverage,12.27,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),13.42%,
+Return on Equity (ROE),26.61%,
+Gross Margin,46.59%,
+Operating Margin,24.56%,
+Net Margin,10.57%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.27,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Manufacturing Ltd,,
+,,,
+,2023,2024,2025
+Revenue,"$45,505,091.44","$47,393,041.56","$46,237,582.89"
+Net Income,"$5,573,406.74","$6,625,566.29","$4,887,208.41"
+Total Assets,"$41,342,445.13","$39,358,299.27","$36,422,143.13"
+EBITDA,"$6,731,272.11","$8,994,989.40","$11,354,523.10"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,4.15%,-2.44%
+

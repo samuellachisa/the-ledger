@@ -1,0 +1,48 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0020
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     National Media Group
+Industry:         Hospitality
+Tax ID:           78-3073474
+Incorporated:     January 27, 2019
+Employees:        289
+
+Address:          6611 Broad Blvd
+                  Madison, MI 21836
+Phone:            (604) 214-4332
+Email:            info@nationalmediagroup.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    9.03%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $172.08M
+Net Income:       $17.58M
+Total Assets:     $203.83M
+EBITDA:           $40.99M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  GROWTH
+Risk Level:       MEDIUM
+
+Active Compliance Flags:
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

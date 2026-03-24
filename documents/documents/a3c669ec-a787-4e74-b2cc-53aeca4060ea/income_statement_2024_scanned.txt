@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: United Transportation Solutions
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $81.75M
+Cost of Goods Sold                                      $45.85M
+----------------------------------------------------------------------
+Gross Profit                                            $35.91M
+
+Operating Expenses:
+  Salaries and Benefits                                 $13.66M
+  Marketing and Sales                                    $4.13M
+  General and Administrative                             $7.22M
+  Depreciation                                           $2.60M
+  Amortization                                          $927.7K
+----------------------------------------------------------------------
+Total Operating Expenses                                $28.53M
+
+Operating Income                                         $7.37M
+
+EBITDA                                                  $10.90M
+
+Non-Operating Items:
+  Interest Expense                                       $1.43M
+  Interest Income                                       $658.1K
+----------------------------------------------------------------------
+Income Before Taxes                                      $6.61M
+Income Tax Expense (21.0%)                              $1.39M
+======================================================================
+NET INCOME                                               $5.22M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0028
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Atlantic Hospitality Services
+Industry:         Real Estate
+Tax ID:           21-8103580
+Incorporated:     May 26, 2016
+Employees:        825
+
+Address:          6271 Park Ave
+                  Clinton, WI 97833
+Phone:            (919) 956-8624
+Email:            info@atlantichospitalityservices.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    7.19%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $72.38M
+Net Income:       $287.9K
+Total Assets:     $54.96M
+EBITDA:           $14.91M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  DECLINING
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: First Logistics Services
+Fiscal Year Ended: December 31, 2025
+Industry: Hospitality
+----------------------------------------------------------------------
+
+Revenue                                                 $34.62M
+Cost of Goods Sold                                      $18.03M
+----------------------------------------------------------------------
+Gross Profit                                            $16.59M
+
+Operating Expenses:
+  Salaries and Benefits                                  $5.70M
+  Marketing and Sales                                    $3.85M
+  General and Administrative                             $3.43M
+  Depreciation                                           $1.82M
+  Amortization                                          $987.2K
+----------------------------------------------------------------------
+Total Operating Expenses                                $15.79M
+
+Operating Income                                        $806.3K
+
+EBITDA                                                   $3.61M
+
+Non-Operating Items:
+  Interest Expense                                      $590.9K
+  Interest Income                                       $164.7K
+----------------------------------------------------------------------
+Income Before Taxes                                     $380.1K
+Income Tax Expense (21.0%)                              $79.8K
+======================================================================
+NET INCOME                                              $300.3K
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

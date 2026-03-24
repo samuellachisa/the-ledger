@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: National Media Group
+Fiscal Year Ended: December 31, 2025
+Industry: Hospitality
+----------------------------------------------------------------------
+
+Revenue                                                $172.08M
+Cost of Goods Sold                                      $79.80M
+----------------------------------------------------------------------
+Gross Profit                                            $92.29M
+
+Operating Expenses:
+  Salaries and Benefits                                 $21.59M
+  Marketing and Sales                                   $18.99M
+  General and Administrative                            $13.10M
+  Depreciation                                          $10.02M
+  Amortization                                           $3.68M
+----------------------------------------------------------------------
+Total Operating Expenses                                $67.38M
+
+Operating Income                                        $24.91M
+
+EBITDA                                                  $38.61M
+
+Non-Operating Items:
+  Interest Expense                                       $6.08M
+  Interest Income                                        $1.10M
+----------------------------------------------------------------------
+Income Before Taxes                                     $19.93M
+Income Tax Expense (23.5%)                              $4.69M
+======================================================================
+NET INCOME                                              $15.24M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 23.5%

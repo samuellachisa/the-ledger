@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Construction Enterprises
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $15.54M
+  Accounts Receivable, Net                              $14.14M
+  Prepaid Expenses                                       $3.62M
+----------------------------------------------------------------------
+Total Current Assets                                    $33.30M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $82.81M
+  Intangible Assets                                     $22.69M
+  Long-term Investments                                 $13.41M
+  Other Assets                                          $22.69M
+----------------------------------------------------------------------
+Total Non-Current Assets                               $141.61M
+======================================================================
+TOTAL ASSETS                                           $174.91M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $8.22M
+  Accrued Expenses                                       $6.49M
+  Short-term Debt                                       $11.31M
+  Current Portion of Long-term Debt                      $6.85M
+----------------------------------------------------------------------
+Total Current Liabilities                               $32.88M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $29.97M
+  Deferred Tax Liability                                 $4.44M
+  Other Liabilities                                      $1.43M
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $35.84M
+======================================================================
+TOTAL LIABILITIES                                       $68.71M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $6.40M
+  Additional Paid-in Capital                            $15.84M
+  Retained Earnings                                     $83.95M
+----------------------------------------------------------------------
+Total Stockholders' Equity                             $106.19M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                           $174.91M
+======================================================================

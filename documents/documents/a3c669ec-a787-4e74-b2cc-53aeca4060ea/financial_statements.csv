@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,United Transportation Solutions,
+,,
+Revenue,"$81,753,797.14",100.00%
+Cost of Goods Sold,"$44,124,380.91",53.97%
+Gross Profit,"$37,629,416.23",46.03%
+,,
+Operating Expenses,"$27,336,534.49",33.44%
+Operating Income,"$10,292,881.75",12.59%
+,,
+Interest Expense,"$1,766,589.21",
+Interest Income,"$594,244.51",
+,,
+Income Before Taxes,"$9,120,537.04",11.16%
+Income Tax Expense,"$1,915,312.78",2.34%
+NET INCOME,"$7,205,224.26",8.81%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,United Transportation Solutions,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$10,395,076.95",
+  Accounts Receivable,"$9,076,237.24",
+Total Current Assets,"$21,106,390.14",
+,,
+Non-Current Assets:,,
+  PP&E,"$45,354,130.78",
+  Intangible Assets,"$8,324,148.83",
+Total Non-Current Assets,"$53,678,279.61",
+TOTAL ASSETS,"$79,253,053.58",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$4,294,479.26",
+  Accrued Expenses,"$4,903,468.00",
+  Short-term Debt,"$10,381,500.64",
+Total Current Liabilities,"$23,264,029.99",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$27,348,776.15",
+Total Non-Current Liabilities,"$27,348,776.15",
+TOTAL LIABILITIES,"$46,057,276.23",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$33,195,777.35",
+TOTAL LIABILITIES & EQUITY,"$79,253,053.58",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,United Transportation Solutions,
+,,
+Liquidity Ratios,,
+Current Ratio,2.04,x
+Quick Ratio,2.04,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,1.39,x
+Debt-to-Assets,58.11%,
+Interest Coverage,6.09,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),13.29%,
+Return on Equity (ROE),31.74%,
+Gross Margin,39.27%,
+Operating Margin,15.52%,
+Net Margin,12.89%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.03,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,United Transportation Solutions,,
+,,,
+,2023,2024,2025
+Revenue,"$88,630,398.08","$80,724,407.06","$81,753,797.14"
+Net Income,"$10,048,082.74","$9,178,397.65","$10,534,951.45"
+Total Assets,"$70,783,588.28","$79,582,853.02","$79,253,053.58"
+EBITDA,"$19,771,782.02","$14,653,406.25","$12,689,753.72"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,-8.92%,1.28%
+

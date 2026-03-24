@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Pacific Construction Services
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $8.70M
+  Accounts Receivable, Net                               $7.67M
+  Prepaid Expenses                                       $1.32M
+----------------------------------------------------------------------
+Total Current Assets                                    $17.70M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $18.69M
+  Intangible Assets                                      $5.64M
+  Long-term Investments                                  $4.47M
+  Other Assets                                   $-4,111,634.87
+----------------------------------------------------------------------
+Total Non-Current Assets                                $24.68M
+======================================================================
+TOTAL ASSETS                                            $42.38M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $4.08M
+  Accrued Expenses                                       $2.80M
+  Short-term Debt                                        $3.71M
+  Current Portion of Long-term Debt                      $2.44M
+----------------------------------------------------------------------
+Total Current Liabilities                               $13.02M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $15.31M
+  Deferred Tax Liability                                 $2.19M
+  Other Liabilities                              $-3,063,062.24
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $14.44M
+======================================================================
+TOTAL LIABILITIES                                       $27.46M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $1.16M
+  Additional Paid-in Capital                             $3.69M
+  Retained Earnings                                     $10.07M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $14.92M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $42.38M
+======================================================================

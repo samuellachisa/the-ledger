@@ -1,0 +1,58 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Construction Solutions
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $2.72M
+  Accounts Receivable, Net                               $1.67M
+  Inventory                                             $827.4K
+  Prepaid Expenses                                      $154.4K
+----------------------------------------------------------------------
+Total Current Assets                                     $5.37M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                     $6.60M
+  Intangible Assets                                      $1.68M
+  Long-term Investments                                  $1.65M
+  Other Assets                                     $-565,101.93
+----------------------------------------------------------------------
+Total Non-Current Assets                                 $9.36M
+======================================================================
+TOTAL ASSETS                                            $14.74M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                      $659.8K
+  Accrued Expenses                                      $684.2K
+  Short-term Debt                                        $1.75M
+  Current Portion of Long-term Debt                     $768.9K
+----------------------------------------------------------------------
+Total Current Liabilities                                $3.86M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $5.27M
+  Deferred Tax Liability                                $788.4K
+  Other Liabilities                                      $88.4K
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $6.15M
+======================================================================
+TOTAL LIABILITIES                                       $10.01M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                          $575.6K
+  Additional Paid-in Capital                            $678.8K
+  Retained Earnings                                      $3.47M
+----------------------------------------------------------------------
+Total Stockholders' Equity                               $4.72M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $14.74M
+======================================================================

@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Pacific Tech Group
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                $110.26M
+Cost of Goods Sold                                      $62.10M
+----------------------------------------------------------------------
+Gross Profit                                            $48.16M
+
+Operating Expenses:
+  Salaries and Benefits                                 $13.59M
+  Marketing and Sales                                    $9.62M
+  General and Administrative                             $9.53M
+  Depreciation                                           $3.54M
+  Amortization                                           $2.53M
+----------------------------------------------------------------------
+Total Operating Expenses                                $38.82M
+
+Operating Income                                         $9.35M
+
+EBITDA                                                  $15.41M
+
+Non-Operating Items:
+  Interest Expense                                       $1.43M
+  Interest Income                                        $1.13M
+----------------------------------------------------------------------
+Income Before Taxes                                      $9.05M
+Income Tax Expense (21.0%)                              $1.90M
+======================================================================
+NET INCOME                                               $7.15M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

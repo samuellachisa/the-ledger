@@ -1,0 +1,38 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Atlantic Manufacturing Enterprises
+Fiscal Year Ended: December 31, 2025
+Industry: Real Estate
+----------------------------------------------------------------------
+
+Revenue                                                 $40.49M
+Cost of Goods Sold                                      $25.15M
+----------------------------------------------------------------------
+Gross Profit                                            $15.34M
+
+Operating Expenses:
+  Salaries and Benefits                                  $5.18M
+  Marketing and Sales                                    $3.87M
+  General and Administrative                             $3.30M
+  Depreciation                                           $1.23M
+  Amortization                                          $480.4K
+----------------------------------------------------------------------
+Total Operating Expenses                                $14.07M
+
+Operating Income                                         $1.27M
+
+Non-Operating Items:
+  Interest Expense                                       $1.09M
+  Interest Income                                       $259.5K
+----------------------------------------------------------------------
+Income Before Taxes                                     $442.9K
+Income Tax Expense (21.0%)                              $93.0K
+======================================================================
+NET INCOME                                              $349.9K
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

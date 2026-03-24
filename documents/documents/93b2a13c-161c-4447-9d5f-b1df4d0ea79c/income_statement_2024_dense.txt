@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - National Energy Partners - FY2025
+======================================================================
+
+Revenue                                                 $47.76M
+Cost of Goods Sold                                      $29.14M
+----------------------------------------------------------------------
+Gross Profit                                            $18.62M
+
+  Salaries and Benefits                                  $6.15M
+  Marketing and Sales                                    $3.03M
+  General and Administrative                             $3.89M
+  Depreciation                                           $1.63M
+  Amortization                                          $652.9K
+----------------------------------------------------------------------
+Total Operating Expenses                                $15.35M
+
+Operating Income                                         $3.27M
+
+EBITDA                                                   $5.55M
+
+Non-Operating Items:
+  Interest Expense                                      $870.2K
+  Interest Income                                       $629.1K
+----------------------------------------------------------------------
+Income Before Taxes                                      $3.03M
+Income Tax Expense (25.5%)                             $771.7K
+======================================================================
+NET INCOME                                               $2.25M
+======================================================================

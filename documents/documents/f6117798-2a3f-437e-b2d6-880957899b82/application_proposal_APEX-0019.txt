@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0019
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Premier Media Technologies
+Industry:         Energy
+Tax ID:           39-6910964
+Incorporated:     October 30, 2002
+Employees:        378
+
+Address:          4597 Main St
+                  Salem, MT 89482
+Phone:            (963) 708-4689
+Email:            info@premiermediatechnologies.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    8.85%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $30.78M
+Net Income:       $682.1K
+Total Assets:     $34.51M
+EBITDA:           $5.00M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  VOLATILE
+Risk Level:       MEDIUM
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

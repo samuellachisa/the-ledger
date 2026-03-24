@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Datas Services
+Fiscal Year Ended: December 31, 2025
+Industry: Manufacturing
+----------------------------------------------------------------------
+
+Revenue                                                 $75.95M
+Cost of Goods Sold                                      $40.76M
+----------------------------------------------------------------------
+Gross Profit                                            $35.19M
+
+Operating Expenses:
+  Salaries and Benefits                                 $11.31M
+  Marketing and Sales                                    $8.54M
+  General and Administrative                             $5.95M
+  Depreciation                                           $2.63M
+  Amortization                                           $1.03M
+----------------------------------------------------------------------
+Total Operating Expenses                                $29.46M
+
+Operating Income                                         $5.73M
+
+EBITDA                                                   $9.38M
+
+Non-Operating Items:
+  Interest Expense                                       $1.54M
+  Interest Income                                       $626.3K
+----------------------------------------------------------------------
+Income Before Taxes                                      $4.82M
+Income Tax Expense (21.0%)                              $1.01M
+======================================================================
+NET INCOME                                               $3.81M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

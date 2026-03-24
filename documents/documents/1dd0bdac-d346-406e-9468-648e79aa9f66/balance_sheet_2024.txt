@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Logistics Corp
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $2.26M
+  Accounts Receivable, Net                               $1.42M
+  Prepaid Expenses                                      $446.1K
+----------------------------------------------------------------------
+Total Current Assets                                     $4.13M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                     $7.80M
+  Intangible Assets                                      $2.10M
+  Long-term Investments                                  $2.21M
+  Other Assets                                           $1.87M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $13.98M
+======================================================================
+TOTAL ASSETS                                            $18.10M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $1.24M
+  Accrued Expenses                                      $855.2K
+  Short-term Debt                                        $1.80M
+  Current Portion of Long-term Debt                     $888.0K
+----------------------------------------------------------------------
+Total Current Liabilities                                $4.78M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $3.95M
+  Deferred Tax Liability                                $508.6K
+  Other Liabilities                                     $493.9K
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $4.95M
+======================================================================
+TOTAL LIABILITIES                                        $9.73M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                          $955.8K
+  Additional Paid-in Capital                             $1.56M
+  Retained Earnings                                      $5.86M
+----------------------------------------------------------------------
+Total Stockholders' Equity                               $8.37M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $18.10M
+======================================================================

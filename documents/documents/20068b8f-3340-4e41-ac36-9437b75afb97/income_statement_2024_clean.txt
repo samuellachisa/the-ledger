@@ -1,0 +1,41 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Logistics Enterprises
+Fiscal Year Ended: December 31, 2025
+Industry: Technology
+----------------------------------------------------------------------
+
+Revenue                                                 $51.37M
+Cost of Goods Sold                                      $30.20M
+----------------------------------------------------------------------
+Gross Profit                                            $21.17M
+
+Operating Expenses:
+  Salaries and Benefits                                  $8.10M
+  Marketing and Sales                                    $2.69M
+  Research and Development                               $2.28M
+  General and Administrative                             $3.66M
+  Depreciation                                           $2.87M
+  Amortization                                          $586.8K
+----------------------------------------------------------------------
+Total Operating Expenses                                $20.18M
+
+Operating Income                                        $992.5K
+
+EBITDA                                                   $4.45M
+
+Non-Operating Items:
+  Interest Expense                                      $824.2K
+  Interest Income                                       $274.6K
+----------------------------------------------------------------------
+Income Before Taxes                                     $443.0K
+Income Tax Expense (21.0%)                              $93.0K
+======================================================================
+NET INCOME                                              $349.9K
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Atlantic Manufacturing Enterprises
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $6.38M
+  Accounts Receivable, Net                               $4.28M
+  Prepaid Expenses                                       $1.14M
+----------------------------------------------------------------------
+Total Current Assets                                    $11.79M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $18.64M
+  Intangible Assets                                      $1.98M
+  Long-term Investments                                  $2.73M
+  Other Assets                                          $100.1K
+----------------------------------------------------------------------
+Total Non-Current Assets                                $23.45M
+======================================================================
+TOTAL ASSETS                                            $35.24M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $3.98M
+  Accrued Expenses                                       $2.37M
+  Short-term Debt                                        $4.62M
+  Current Portion of Long-term Debt                      $1.13M
+----------------------------------------------------------------------
+Total Current Liabilities                               $12.10M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $9.15M
+  Deferred Tax Liability                                 $1.69M
+  Other Liabilities                              $-2,270,890.60
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $8.57M
+======================================================================
+TOTAL LIABILITIES                                       $20.67M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.14M
+  Additional Paid-in Capital                             $1.57M
+  Retained Earnings                                     $10.86M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $14.57M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $35.24M
+======================================================================

@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - Energy Corp - FY2025
+======================================================================
+
+Revenue                                                 $68.73M
+Cost of Goods Sold                                      $33.82M
+----------------------------------------------------------------------
+Gross Profit                                            $34.91M
+
+  Salaries and Benefits                                 $12.57M
+  Marketing and Sales                                    $6.36M
+  General and Administrative                             $5.01M
+  Depreciation                                           $2.97M
+  Amortization                                           $1.62M
+----------------------------------------------------------------------
+Total Operating Expenses                                $28.52M
+
+Operating Income                                         $6.39M
+
+EBITDA                                                  $10.98M
+
+Non-Operating Items:
+  Interest Expense                                       $1.14M
+  Interest Income                                       $761.4K
+----------------------------------------------------------------------
+Income Before Taxes                                      $6.02M
+Income Tax Expense (21.0%)                              $1.26M
+======================================================================
+NET INCOME                                               $4.75M
+======================================================================

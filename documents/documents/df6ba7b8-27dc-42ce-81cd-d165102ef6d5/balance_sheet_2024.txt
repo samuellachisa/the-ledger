@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: National Media Group
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $31.75M
+  Accounts Receivable, Net                              $19.67M
+  Prepaid Expenses                                       $4.85M
+----------------------------------------------------------------------
+Total Current Assets                                    $56.27M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $84.53M
+  Intangible Assets                                     $11.84M
+  Long-term Investments                                 $22.59M
+  Other Assets                                          $28.60M
+----------------------------------------------------------------------
+Total Non-Current Assets                               $147.55M
+======================================================================
+TOTAL ASSETS                                           $203.83M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $9.17M
+  Accrued Expenses                                       $6.58M
+  Short-term Debt                                       $25.02M
+  Current Portion of Long-term Debt                      $9.93M
+----------------------------------------------------------------------
+Total Current Liabilities                               $50.70M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $59.67M
+  Deferred Tax Liability                                $12.80M
+  Other Liabilities                                      $5.15M
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $77.62M
+======================================================================
+TOTAL LIABILITIES                                      $128.32M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $7.78M
+  Additional Paid-in Capital                            $12.69M
+  Retained Earnings                                     $55.04M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $75.51M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                           $203.83M
+======================================================================

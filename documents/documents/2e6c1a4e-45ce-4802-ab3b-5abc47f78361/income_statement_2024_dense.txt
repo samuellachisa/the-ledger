@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - United Agriculture Systems - FY2025
+======================================================================
+
+Revenue                                                 $35.75M
+Cost of Goods Sold                                      $19.91M
+----------------------------------------------------------------------
+Gross Profit                                            $15.84M
+
+  Salaries and Benefits                                  $4.99M
+  Marketing and Sales                                    $2.94M
+  General and Administrative                             $2.53M
+  Depreciation                                           $2.07M
+  Amortization                                          $849.6K
+----------------------------------------------------------------------
+Total Operating Expenses                                $13.38M
+
+Operating Income                                         $2.46M
+
+EBITDA                                                   $5.38M
+
+Non-Operating Items:
+  Interest Expense                                      $689.2K
+  Interest Income                                       $273.0K
+----------------------------------------------------------------------
+Income Before Taxes                                      $2.05M
+Income Tax Expense (21.0%)                             $429.9K
+======================================================================
+NET INCOME                                               $1.62M
+======================================================================

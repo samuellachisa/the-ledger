@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - Finance Inc - FY2025
+======================================================================
+
+Revenue                                                 $54.06M
+Cost of Goods Sold                                      $33.37M
+----------------------------------------------------------------------
+Gross Profit                                            $20.70M
+
+  Salaries and Benefits                                  $8.82M
+  Marketing and Sales                                    $5.48M
+  General and Administrative                             $4.97M
+  Depreciation                                           $3.08M
+  Amortization                                           $1.07M
+----------------------------------------------------------------------
+Total Operating Expenses                                $23.42M
+
+Operating Income                                 $-2,720,577.08
+
+EBITDA                                                   $1.43M
+
+Non-Operating Items:
+  Interest Expense                                      $713.5K
+  Interest Income                                       $425.8K
+----------------------------------------------------------------------
+Income Before Taxes                              $-3,008,309.69
+Income Tax Expense (21.0%)                               $0.00
+======================================================================
+NET INCOME                                       $-3,008,309.69
+======================================================================

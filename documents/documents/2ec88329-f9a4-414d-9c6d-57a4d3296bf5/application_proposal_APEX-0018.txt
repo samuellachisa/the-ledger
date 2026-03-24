@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0018
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Pacific Tech Solutions
+Industry:         Education
+Tax ID:           47-7014016
+Incorporated:     December 02, 2011
+Employees:        864
+
+Address:          7369 Oak Blvd
+                  Riverside, OH 13794
+Phone:            (247) 532-0919
+Email:            info@pacifictechsolutions.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    6.41%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $8.29M
+Net Income:       $-32,220.08
+Total Assets:     $8.48M
+EBITDA:           $1.01M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  DECLINING
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

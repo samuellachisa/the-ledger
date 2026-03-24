@@ -1,0 +1,41 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Advanced Data Solutions
+Fiscal Year Ended: December 31, 2025
+Industry: Technology
+----------------------------------------------------------------------
+
+Revenue                                                $140.39M
+Cost of Goods Sold                                      $81.82M
+----------------------------------------------------------------------
+Gross Profit                                            $58.57M
+
+Operating Expenses:
+  Salaries and Benefits                                 $20.99M
+  Marketing and Sales                                   $12.46M
+  Research and Development                               $6.62M
+  General and Administrative                            $14.02M
+  Depreciation                                           $6.53M
+  Amortization                                           $2.39M
+----------------------------------------------------------------------
+Total Operating Expenses                                $63.02M
+
+Operating Income                                 $-4,444,371.77
+
+EBITDA                                                   $4.48M
+
+Non-Operating Items:
+  Interest Expense                                       $2.45M
+  Interest Income                                        $1.01M
+----------------------------------------------------------------------
+Income Before Taxes                              $-5,880,353.96
+Income Tax Expense (21.0%)                               $0.00
+======================================================================
+NET INCOME                                       $-5,880,353.96
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

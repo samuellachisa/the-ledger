@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Retail Technologies
+Fiscal Year Ended: December 31, 2025
+Industry: Education
+----------------------------------------------------------------------
+
+Revenue                                                 $87.61M
+Cost of Goods Sold                                      $41.08M
+----------------------------------------------------------------------
+Gross Profit                                            $46.53M
+
+Operating Expenses:
+  Salaries and Benefits                                 $15.13M
+  Marketing and Sales                                    $6.55M
+  General and Administrative                             $6.70M
+  Depreciation                                           $4.90M
+  Amortization                                          $971.1K
+----------------------------------------------------------------------
+Total Operating Expenses                                $34.25M
+
+Operating Income                                        $12.28M
+
+EBITDA                                                  $18.15M
+
+Non-Operating Items:
+  Interest Expense                                       $1.56M
+  Interest Income                                        $1.09M
+----------------------------------------------------------------------
+Income Before Taxes                                     $11.81M
+Income Tax Expense (24.5%)                              $2.89M
+======================================================================
+NET INCOME                                               $8.92M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 24.5%

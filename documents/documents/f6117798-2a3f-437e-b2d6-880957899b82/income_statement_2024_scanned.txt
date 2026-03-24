@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Premier Media Technologies
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $30.78M
+Cost of Goods Sold                                      $14.23M
+----------------------------------------------------------------------
+Gross Profit                                            $16.55M
+
+Operating Expenses:
+  Salaries and Benefits                                  $4.47M
+  Marketing and Sales                                    $1.65M
+  General and Administrative                             $2.43M
+  Depreciation                                           $1.77M
+  Amortization                                          $634.7K
+----------------------------------------------------------------------
+Total Operating Expenses                                $10.95M
+
+Operating Income                                         $5.60M
+
+EBITDA                                                   $8.01M
+
+Non-Operating Items:
+  Interest Expense                                      $726.3K
+  Interest Income                                       $347.8K
+----------------------------------------------------------------------
+Income Before Taxes                                      $5.22M
+Income Tax Expense (21.0%)                              $1.10M
+======================================================================
+NET INCOME                                               $4.12M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

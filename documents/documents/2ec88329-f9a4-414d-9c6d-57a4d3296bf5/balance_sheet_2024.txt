@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Pacific Tech Solutions
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $1.11M
+  Accounts Receivable, Net                              $977.1K
+  Prepaid Expenses                                      $215.4K
+----------------------------------------------------------------------
+Total Current Assets                                     $2.30M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                     $3.58M
+  Intangible Assets                                      $1.16M
+  Long-term Investments                                 $535.9K
+  Other Assets                                          $907.8K
+----------------------------------------------------------------------
+Total Non-Current Assets                                 $6.18M
+======================================================================
+TOTAL ASSETS                                             $8.48M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                      $563.2K
+  Accrued Expenses                                      $445.0K
+  Short-term Debt                                       $642.4K
+  Current Portion of Long-term Debt                     $173.2K
+----------------------------------------------------------------------
+Total Current Liabilities                                $1.82M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $1.55M
+  Deferred Tax Liability                                $192.2K
+  Other Liabilities                                $-150,467.93
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $1.59M
+======================================================================
+TOTAL LIABILITIES                                        $3.41M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                          $467.0K
+  Additional Paid-in Capital                            $593.6K
+  Retained Earnings                                      $4.01M
+----------------------------------------------------------------------
+Total Stockholders' Equity                               $5.07M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                             $8.48M
+======================================================================

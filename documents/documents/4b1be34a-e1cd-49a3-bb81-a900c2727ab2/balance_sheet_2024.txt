@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Energy Services
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $14.15M
+  Accounts Receivable, Net                              $12.69M
+  Prepaid Expenses                                       $1.71M
+----------------------------------------------------------------------
+Total Current Assets                                    $28.55M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $48.33M
+  Intangible Assets                                      $8.10M
+  Long-term Investments                                 $12.28M
+  Other Assets                                            $4.8K
+----------------------------------------------------------------------
+Total Non-Current Assets                                $68.71M
+======================================================================
+TOTAL ASSETS                                            $97.26M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $6.22M
+  Accrued Expenses                                       $5.24M
+  Short-term Debt                                       $10.87M
+  Current Portion of Long-term Debt                      $4.67M
+----------------------------------------------------------------------
+Total Current Liabilities                               $27.00M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $21.12M
+  Deferred Tax Liability                                 $3.26M
+  Other Liabilities                              $-4,207,427.29
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $20.18M
+======================================================================
+TOTAL LIABILITIES                                       $47.18M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $6.79M
+  Additional Paid-in Capital                             $8.09M
+  Retained Earnings                                     $35.20M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $50.08M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $97.26M
+======================================================================

@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0013
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Global Hospitality Systems
+Industry:         Media
+Tax ID:           56-4010529
+Incorporated:     December 19, 2015
+Employees:        130
+
+Address:          8695 Broad Blvd
+                  Franklin, MO 23176
+Phone:            (398) 503-3727
+Email:            info@globalhospitalitysystems.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    8.33%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $75.30M
+Net Income:       $5.11M
+Total Assets:     $72.51M
+EBITDA:           $11.51M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  RECOVERING
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

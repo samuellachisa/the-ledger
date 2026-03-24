@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Metro Retail Group
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $15.52M
+  Accounts Receivable, Net                               $5.02M
+  Prepaid Expenses                                       $1.25M
+----------------------------------------------------------------------
+Total Current Assets                                    $21.79M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $23.49M
+  Intangible Assets                                      $5.67M
+  Long-term Investments                                  $6.66M
+  Other Assets                                  $-11,278,455.12
+----------------------------------------------------------------------
+Total Non-Current Assets                                $24.53M
+======================================================================
+TOTAL ASSETS                                            $46.33M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $5.57M
+  Accrued Expenses                                       $2.05M
+  Short-term Debt                                        $5.44M
+  Current Portion of Long-term Debt                      $1.38M
+----------------------------------------------------------------------
+Total Current Liabilities                               $14.43M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $13.67M
+  Deferred Tax Liability                                 $2.34M
+  Other Liabilities                              $-7,031,100.54
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $8.98M
+======================================================================
+TOTAL LIABILITIES                                       $23.41M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.06M
+  Additional Paid-in Capital                             $3.99M
+  Retained Earnings                                     $16.87M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $22.92M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $46.33M
+======================================================================

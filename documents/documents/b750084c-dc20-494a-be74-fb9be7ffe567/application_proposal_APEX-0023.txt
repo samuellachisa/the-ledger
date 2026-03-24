@@ -1,0 +1,49 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0023
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Atlantic Consulting Systems
+Industry:         Hospitality
+Tax ID:           95-5276341
+Incorporated:     August 17, 2020
+Employees:        281
+
+Address:          7530 Market Dr
+                  Georgetown, OR 22463
+Phone:            (520) 637-5120
+Email:            info@atlanticconsultingsystems.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    7.81%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $131.84M
+Net Income:       $14.89M
+Total Assets:     $148.87M
+EBITDA:           $27.22M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  GROWTH
+Risk Level:       MEDIUM
+
+Active Compliance Flags:
+  - [MEDIUM] LITIGATION_PENDING
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

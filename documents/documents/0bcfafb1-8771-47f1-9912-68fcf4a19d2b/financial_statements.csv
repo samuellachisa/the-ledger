@@ -1,0 +1,87 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Global Technology Inc,
+,,
+Revenue,"$22,005,911.70",100.00%
+Cost of Goods Sold,"$11,458,909.89",52.07%
+Gross Profit,"$10,547,001.81",47.93%
+,,
+Operating Expenses,"$8,429,762.87",38.31%
+Operating Income,"$2,117,238.94",9.62%
+,,
+Interest Expense,"$607,935.54",
+Interest Income,"$349,500.08",
+,,
+Income Before Taxes,"$1,858,803.49",8.45%
+Income Tax Expense,"$390,348.73",1.77%
+NET INCOME,"$1,468,454.76",6.67%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Global Technology Inc,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$3,582,168.95",
+  Accounts Receivable,"$3,252,207.56",
+  Inventory,"$2,025,175.59",
+Total Current Assets,"$9,299,670.33",
+,,
+Non-Current Assets:,,
+  PP&E,"$12,015,280.42",
+  Intangible Assets,"$2,753,707.88",
+Total Non-Current Assets,"$14,768,988.30",
+TOTAL ASSETS,"$25,546,530.96",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$1,334,371.15",
+  Accrued Expenses,"$1,093,739.78",
+  Short-term Debt,"$1,547,225.21",
+Total Current Liabilities,"$4,901,563.66",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$4,881,724.68",
+Total Non-Current Liabilities,"$4,881,724.68",
+TOTAL LIABILITIES,"$11,577,843.93",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$13,968,687.03",
+TOTAL LIABILITIES & EQUITY,"$25,546,530.96",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Global Technology Inc,
+,,
+Liquidity Ratios,,
+Current Ratio,3.26,x
+Quick Ratio,2.40,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.83,x
+Debt-to-Assets,45.32%,
+Interest Coverage,5.77,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),5.85%,
+Return on Equity (ROE),10.70%,
+Gross Margin,51.90%,
+Operating Margin,17.45%,
+Net Margin,6.79%,
+,,
+Efficiency Ratios,,
+Asset Turnover,0.86,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Global Technology Inc,,
+,,,
+,2023,2024,2025
+Revenue,"$17,235,197.15","$18,202,160.66","$22,005,911.70"
+Net Income,"$1,004,345.68","$634,584.49","$1,494,269.47"
+Total Assets,"$15,687,402.52","$14,800,013.43","$25,546,530.96"
+EBITDA,"$4,103,347.95","$3,715,901.79","$3,840,043.18"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,5.61%,20.90%
+

@@ -1,0 +1,87 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Advanced Manufacturing Systems,
+,,
+Revenue,"$24,280,364.03",100.00%
+Cost of Goods Sold,"$15,337,475.93",63.17%
+Gross Profit,"$8,942,888.10",36.83%
+,,
+Operating Expenses,"$10,084,272.10",41.53%
+Operating Income,"$-1,141,384.00",-4.70%
+,,
+Interest Expense,"$351,548.92",
+Interest Income,"$108,088.73",
+,,
+Income Before Taxes,"$-1,384,844.19",-5.70%
+Income Tax Expense,"$-290,817.28",-1.20%
+NET INCOME,"$-1,094,026.91",-4.51%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Advanced Manufacturing Systems,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$2,813,944.56",
+  Accounts Receivable,"$3,215,376.75",
+  Inventory,"$2,181,457.01",
+Total Current Assets,"$8,696,385.60",
+,,
+Non-Current Assets:,,
+  PP&E,"$7,429,480.23",
+  Intangible Assets,"$1,013,414.69",
+Total Non-Current Assets,"$8,442,894.91",
+TOTAL ASSETS,"$16,231,420.64",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$2,050,085.82",
+  Accrued Expenses,"$1,238,104.58",
+  Short-term Debt,"$2,640,272.40",
+Total Current Liabilities,"$6,803,444.30",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$5,469,667.27",
+Total Non-Current Liabilities,"$5,469,667.27",
+TOTAL LIABILITIES,"$10,937,268.81",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$5,294,151.83",
+TOTAL LIABILITIES & EQUITY,"$16,231,420.64",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Advanced Manufacturing Systems,
+,,
+Liquidity Ratios,,
+Current Ratio,2.27,x
+Quick Ratio,1.91,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,2.07,x
+Debt-to-Assets,67.38%,
+Interest Coverage,4.99,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),3.95%,
+Return on Equity (ROE),12.10%,
+Gross Margin,40.01%,
+Operating Margin,12.90%,
+Net Margin,2.64%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.50,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Advanced Manufacturing Systems,,
+,,,
+,2023,2024,2025
+Revenue,"$20,631,029.88","$23,790,631.42","$24,280,364.03"
+Net Income,"$1,471,503.76","$1,417,799.61","$640,418.67"
+Total Assets,"$18,424,528.05","$17,346,213.68","$16,231,420.64"
+EBITDA,"$3,715,837.87","$4,643,466.49","$3,131,498.98"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,15.31%,2.06%
+

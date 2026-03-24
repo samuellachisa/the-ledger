@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Premier Agriculture Systems
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $2.12M
+  Accounts Receivable, Net                               $2.88M
+  Prepaid Expenses                                      $775.7K
+----------------------------------------------------------------------
+Total Current Assets                                     $5.78M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $14.25M
+  Intangible Assets                                      $4.42M
+  Long-term Investments                                  $3.09M
+  Other Assets                                           $3.64M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $25.40M
+======================================================================
+TOTAL ASSETS                                            $31.18M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $1.45M
+  Accrued Expenses                                       $1.44M
+  Short-term Debt                                        $3.06M
+  Current Portion of Long-term Debt                      $1.73M
+----------------------------------------------------------------------
+Total Current Liabilities                                $7.68M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $8.91M
+  Deferred Tax Liability                                $991.0K
+  Other Liabilities                                     $636.1K
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $10.54M
+======================================================================
+TOTAL LIABILITIES                                       $18.22M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $1.53M
+  Additional Paid-in Capital                             $2.94M
+  Retained Earnings                                      $8.49M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $12.96M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $31.18M
+======================================================================

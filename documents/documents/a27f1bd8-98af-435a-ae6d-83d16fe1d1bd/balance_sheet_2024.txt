@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Finance Systems
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $6.37M
+  Accounts Receivable, Net                               $3.53M
+  Prepaid Expenses                                      $779.5K
+----------------------------------------------------------------------
+Total Current Assets                                    $10.68M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $21.41M
+  Intangible Assets                                      $2.29M
+  Long-term Investments                                  $4.21M
+  Other Assets                                           $1.00M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $28.91M
+======================================================================
+TOTAL ASSETS                                            $39.59M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $2.19M
+  Accrued Expenses                                       $1.91M
+  Short-term Debt                                        $2.41M
+  Current Portion of Long-term Debt                      $1.08M
+----------------------------------------------------------------------
+Total Current Liabilities                                $7.58M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $5.88M
+  Deferred Tax Liability                                $908.4K
+  Other Liabilities                                $-688,593.45
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $6.10M
+======================================================================
+TOTAL LIABILITIES                                       $13.68M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.64M
+  Additional Paid-in Capital                             $3.04M
+  Retained Earnings                                     $20.22M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $25.91M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $39.59M
+======================================================================

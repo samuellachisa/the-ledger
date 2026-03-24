@@ -1,0 +1,87 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Construction Technologies,
+,,
+Revenue,"$53,598,115.18",100.00%
+Cost of Goods Sold,"$34,390,403.46",64.16%
+Gross Profit,"$19,207,711.72",35.84%
+,,
+Operating Expenses,"$17,651,514.88",32.93%
+Operating Income,"$1,556,196.84",2.90%
+,,
+Interest Expense,"$1,194,764.71",
+Interest Income,"$362,420.82",
+,,
+Income Before Taxes,"$723,852.95",1.35%
+Income Tax Expense,"$152,009.12",0.28%
+NET INCOME,"$571,843.83",1.07%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Construction Technologies,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$12,258,304.13",
+  Accounts Receivable,"$6,641,179.93",
+  Inventory,"$3,062,226.01",
+Total Current Assets,"$23,033,672.38",
+,,
+Non-Current Assets:,,
+  PP&E,"$34,889,268.65",
+  Intangible Assets,"$8,496,134.96",
+Total Non-Current Assets,"$43,385,403.61",
+TOTAL ASSETS,"$62,920,665.81",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$4,288,952.30",
+  Accrued Expenses,"$1,802,593.16",
+  Short-term Debt,"$5,749,141.13",
+Total Current Liabilities,"$13,698,419.47",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$12,923,483.00",
+Total Non-Current Liabilities,"$12,923,483.00",
+TOTAL LIABILITIES,"$23,221,661.10",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$39,699,004.71",
+TOTAL LIABILITIES & EQUITY,"$62,920,665.81",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Construction Technologies,
+,,
+Liquidity Ratios,,
+Current Ratio,3.10,x
+Quick Ratio,2.46,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.58,x
+Debt-to-Assets,36.91%,
+Interest Coverage,8.16,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),2.86%,
+Return on Equity (ROE),4.53%,
+Gross Margin,51.99%,
+Operating Margin,21.27%,
+Net Margin,3.36%,
+,,
+Efficiency Ratios,,
+Asset Turnover,0.85,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Construction Technologies,,
+,,,
+,2023,2024,2025
+Revenue,"$47,174,232.47","$55,252,233.37","$53,598,115.18"
+Net Income,"$1,065,728.85","$4,995,010.81","$1,799,441.04"
+Total Assets,"$50,712,241.22","$58,148,046.94","$62,920,665.81"
+EBITDA,"$11,263,344.55","$11,614,985.45","$11,402,360.45"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,17.12%,-2.99%
+

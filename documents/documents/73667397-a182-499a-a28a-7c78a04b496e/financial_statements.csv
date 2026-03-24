@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Summit Finance Ltd,
+,,
+Revenue,"$51,954,063.38",100.00%
+Cost of Goods Sold,"$27,894,799.13",53.69%
+Gross Profit,"$24,059,264.25",46.31%
+,,
+Operating Expenses,"$20,558,691.10",39.57%
+Operating Income,"$3,500,573.15",6.74%
+,,
+Interest Expense,"$1,128,586.80",
+Interest Income,"$568,387.91",
+,,
+Income Before Taxes,"$2,940,374.26",5.66%
+Income Tax Expense,"$617,478.60",1.19%
+NET INCOME,"$2,322,895.67",4.47%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Summit Finance Ltd,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$6,470,668.08",
+  Accounts Receivable,"$5,557,197.83",
+Total Current Assets,"$13,066,947.18",
+,,
+Non-Current Assets:,,
+  PP&E,"$26,477,847.90",
+  Intangible Assets,"$3,877,885.67",
+Total Non-Current Assets,"$30,355,733.58",
+TOTAL ASSETS,"$51,381,609.04",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$4,438,916.95",
+  Accrued Expenses,"$1,561,257.96",
+  Short-term Debt,"$6,839,514.88",
+Total Current Liabilities,"$15,130,636.55",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$14,538,645.96",
+Total Non-Current Liabilities,"$14,538,645.96",
+TOTAL LIABILITIES,"$28,636,834.52",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$22,744,774.52",
+TOTAL LIABILITIES & EQUITY,"$51,381,609.04",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Summit Finance Ltd,
+,,
+Liquidity Ratios,,
+Current Ratio,2.06,x
+Quick Ratio,2.06,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,1.26,x
+Debt-to-Assets,55.73%,
+Interest Coverage,3.39,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),1.61%,
+Return on Equity (ROE),3.63%,
+Gross Margin,36.40%,
+Operating Margin,12.40%,
+Net Margin,1.59%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.01,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Summit Finance Ltd,,
+,,,
+,2023,2024,2025
+Revenue,"$67,800,476.05","$55,759,639.99","$51,954,063.38"
+Net Income,"$-2,530,594.84","$522,278.34","$825,566.04"
+Total Assets,"$61,936,773.67","$49,945,763.62","$51,381,609.04"
+EBITDA,"$8,696,261.61","$11,149,914.45","$6,444,879.91"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,-17.76%,-6.82%
+

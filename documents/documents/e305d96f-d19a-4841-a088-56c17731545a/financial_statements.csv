@@ -1,0 +1,87 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Retail Holdings,
+,,
+Revenue,"$20,909,348.30",100.00%
+Cost of Goods Sold,"$13,264,339.18",63.44%
+Gross Profit,"$7,645,009.12",36.56%
+,,
+Operating Expenses,"$7,352,734.24",35.16%
+Operating Income,"$292,274.88",1.40%
+,,
+Interest Expense,"$746,390.33",
+Interest Income,"$352,852.49",
+,,
+Income Before Taxes,"$-101,262.96",-0.48%
+Income Tax Expense,"$-21,265.22",-0.10%
+NET INCOME,"$-79,997.74",-0.38%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Retail Holdings,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$2,937,812.33",
+  Accounts Receivable,"$2,829,043.87",
+  Inventory,"$1,652,799.71",
+Total Current Assets,"$7,837,842.88",
+,,
+Non-Current Assets:,,
+  PP&E,"$15,180,885.74",
+  Intangible Assets,"$2,606,860.17",
+Total Non-Current Assets,"$17,787,745.91",
+TOTAL ASSETS,"$25,868,440.07",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$1,903,325.15",
+  Accrued Expenses,"$804,699.81",
+  Short-term Debt,"$1,916,731.46",
+Total Current Liabilities,"$5,683,845.67",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$6,849,494.76",
+Total Non-Current Liabilities,"$6,849,494.76",
+TOTAL LIABILITIES,"$13,238,615.49",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$12,629,824.58",
+TOTAL LIABILITIES & EQUITY,"$25,868,440.07",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Retail Holdings,
+,,
+Liquidity Ratios,,
+Current Ratio,2.86,x
+Quick Ratio,2.36,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,1.05,x
+Debt-to-Assets,51.18%,
+Interest Coverage,4.01,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),6.08%,
+Return on Equity (ROE),12.44%,
+Gross Margin,46.04%,
+Operating Margin,15.57%,
+Net Margin,7.52%,
+,,
+Efficiency Ratios,,
+Asset Turnover,0.81,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Retail Holdings,,
+,,,
+,2023,2024,2025
+Revenue,"$22,484,538.42","$23,173,020.44","$20,909,348.30"
+Net Income,"$2,344,113.67","$1,895,171.26","$1,571,637.70"
+Total Assets,"$23,372,619.08","$18,293,599.54","$25,868,440.07"
+EBITDA,"$2,724,865.01","$4,236,411.42","$3,255,926.26"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,3.06%,-9.77%
+

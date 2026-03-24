@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Atlantic Consulting Systems,
+,,
+Revenue,"$131,836,813.08",100.00%
+Cost of Goods Sold,"$76,840,761.79",58.28%
+Gross Profit,"$54,996,051.29",41.72%
+,,
+Operating Expenses,"$41,665,707.36",31.60%
+Operating Income,"$13,330,343.94",10.11%
+,,
+Interest Expense,"$2,590,463.27",
+Interest Income,"$2,006,839.26",
+,,
+Income Before Taxes,"$12,746,719.92",9.67%
+Income Tax Expense,"$2,676,811.18",2.03%
+NET INCOME,"$10,069,908.74",7.64%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Atlantic Consulting Systems,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$26,658,255.46",
+  Accounts Receivable,"$13,318,492.20",
+Total Current Assets,"$42,613,483.92",
+,,
+Non-Current Assets:,,
+  PP&E,"$68,758,317.28",
+  Intangible Assets,"$13,523,574.82",
+Total Non-Current Assets,"$82,281,892.10",
+TOTAL ASSETS,"$148,873,628.28",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$9,244,399.88",
+  Accrued Expenses,"$5,124,451.58",
+  Short-term Debt,"$7,826,643.55",
+Total Current Liabilities,"$27,452,987.83",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$31,813,697.98",
+Total Non-Current Liabilities,"$31,813,697.98",
+TOTAL LIABILITIES,"$65,718,660.11",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$83,154,968.17",
+TOTAL LIABILITIES & EQUITY,"$148,873,628.28",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Atlantic Consulting Systems,
+,,
+Liquidity Ratios,,
+Current Ratio,2.94,x
+Quick Ratio,2.94,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.79,x
+Debt-to-Assets,44.14%,
+Interest Coverage,5.75,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),10.00%,
+Return on Equity (ROE),17.91%,
+Gross Margin,41.02%,
+Operating Margin,20.65%,
+Net Margin,11.30%,
+,,
+Efficiency Ratios,,
+Asset Turnover,0.89,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Atlantic Consulting Systems,,
+,,,
+,2023,2024,2025
+Revenue,"$89,368,647.09","$104,440,313.76","$131,836,813.08"
+Net Income,"$10,494,569.37","$9,363,747.06","$14,892,892.61"
+Total Assets,"$98,548,732.82","$79,292,216.49","$148,873,628.28"
+EBITDA,"$11,504,187.33","$20,086,817.10","$27,223,546.16"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,16.86%,26.23%
+

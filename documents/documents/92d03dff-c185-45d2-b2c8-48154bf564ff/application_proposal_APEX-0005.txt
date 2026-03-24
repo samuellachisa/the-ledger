@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0005
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Pacific Retail Holdings
+Industry:         Retail
+Tax ID:           91-5394880
+Incorporated:     November 17, 1995
+Employees:        1,235
+
+Address:          7039 Park St
+                  Riverside, FL 10464
+Phone:            (541) 989-2143
+Email:            info@pacificretailholdings.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    4.82%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $55.48M
+Net Income:       $5.66M
+Total Assets:     $52.57M
+EBITDA:           $13.67M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  STABLE
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

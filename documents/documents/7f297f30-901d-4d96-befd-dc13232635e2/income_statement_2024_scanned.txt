@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Premier Agriculture Systems
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $25.92M
+Cost of Goods Sold                                      $14.12M
+----------------------------------------------------------------------
+Gross Profit                                            $11.80M
+
+Operating Expenses:
+  Salaries and Benefits                                  $3.35M
+  Marketing and Sales                                    $3.02M
+  General and Administrative                             $2.04M
+  Depreciation                                          $976.9K
+  Amortization                                          $450.4K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $9.83M
+
+Operating Income                                         $1.97M
+
+EBITDA                                                   $3.40M
+
+Non-Operating Items:
+  Interest Expense                                      $877.8K
+  Interest Income                                       $456.4K
+----------------------------------------------------------------------
+Income Before Taxes                                      $1.55M
+Income Tax Expense (21.0%)                             $325.9K
+======================================================================
+NET INCOME                                               $1.23M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

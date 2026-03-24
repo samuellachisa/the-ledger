@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Finance Services
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                $119.66M
+Cost of Goods Sold                                      $66.56M
+----------------------------------------------------------------------
+Gross Profit                                            $53.10M
+
+Operating Expenses:
+  Salaries and Benefits                                 $19.71M
+  Marketing and Sales                                    $8.64M
+  General and Administrative                            $10.79M
+  Depreciation                                           $5.18M
+  Amortization                                           $3.15M
+----------------------------------------------------------------------
+Total Operating Expenses                                $47.47M
+
+Operating Income                                         $5.63M
+
+EBITDA                                                  $13.96M
+
+Non-Operating Items:
+  Interest Expense                                       $2.19M
+  Interest Income                                       $988.0K
+----------------------------------------------------------------------
+Income Before Taxes                                      $4.43M
+Income Tax Expense (21.0%)                             $930.0K
+======================================================================
+NET INCOME                                               $3.50M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

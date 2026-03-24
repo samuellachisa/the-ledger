@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0012
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     United Transportation Solutions
+Industry:         Energy
+Tax ID:           72-5031966
+Incorporated:     October 04, 2012
+Employees:        163
+
+Address:          9206 Main Ave
+                  Clayton, DE 21221
+Phone:            (447) 937-6658
+Email:            info@unitedtransportationsolutions.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    8.34%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $81.75M
+Net Income:       $10.53M
+Total Assets:     $79.25M
+EBITDA:           $12.69M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  VOLATILE
+Risk Level:       HIGH
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

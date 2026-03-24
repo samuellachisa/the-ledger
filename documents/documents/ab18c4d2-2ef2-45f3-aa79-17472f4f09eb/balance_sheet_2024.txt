@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Advanced Data Solutions
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $16.94M
+  Accounts Receivable, Net                              $15.10M
+  Prepaid Expenses                                       $2.69M
+----------------------------------------------------------------------
+Total Current Assets                                    $34.72M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $56.19M
+  Intangible Assets                                     $13.58M
+  Long-term Investments                                  $6.88M
+  Other Assets                                          $14.01M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $90.66M
+======================================================================
+TOTAL ASSETS                                           $125.38M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $8.99M
+  Accrued Expenses                                       $6.73M
+  Short-term Debt                                       $12.71M
+  Current Portion of Long-term Debt                      $4.69M
+----------------------------------------------------------------------
+Total Current Liabilities                               $33.12M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $25.65M
+  Deferred Tax Liability                                 $2.83M
+  Other Liabilities                              $-5,487,844.12
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $22.99M
+======================================================================
+TOTAL LIABILITIES                                       $56.11M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $4.21M
+  Additional Paid-in Capital                             $8.32M
+  Retained Earnings                                     $56.74M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $69.26M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                           $125.38M
+======================================================================

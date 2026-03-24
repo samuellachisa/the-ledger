@@ -1,0 +1,58 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Global Technology Inc
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $3.81M
+  Accounts Receivable, Net                               $1.98M
+  Inventory                                              $2.53M
+  Prepaid Expenses                                      $360.2K
+----------------------------------------------------------------------
+Total Current Assets                                     $8.68M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $12.23M
+  Intangible Assets                                      $2.85M
+  Long-term Investments                                  $3.43M
+  Other Assets                                   $-1,641,686.32
+----------------------------------------------------------------------
+Total Non-Current Assets                                $16.87M
+======================================================================
+TOTAL ASSETS                                            $25.55M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $1.75M
+  Accrued Expenses                                      $995.1K
+  Short-term Debt                                        $2.04M
+  Current Portion of Long-term Debt                     $862.5K
+----------------------------------------------------------------------
+Total Current Liabilities                                $5.65M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $5.93M
+  Deferred Tax Liability                                $853.8K
+  Other Liabilities                                $-864,704.26
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $5.92M
+======================================================================
+TOTAL LIABILITIES                                       $11.58M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                          $721.7K
+  Additional Paid-in Capital                             $2.09M
+  Retained Earnings                                     $11.16M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $13.97M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $25.55M
+======================================================================

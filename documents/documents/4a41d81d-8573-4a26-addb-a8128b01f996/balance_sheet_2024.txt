@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: United Media Ltd
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $10.08M
+  Accounts Receivable, Net                              $11.34M
+  Prepaid Expenses                                       $1.97M
+----------------------------------------------------------------------
+Total Current Assets                                    $23.40M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $32.98M
+  Intangible Assets                                      $3.94M
+  Long-term Investments                                  $6.69M
+  Other Assets                                  $-10,225,127.97
+----------------------------------------------------------------------
+Total Non-Current Assets                                $33.39M
+======================================================================
+TOTAL ASSETS                                            $56.79M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $6.04M
+  Accrued Expenses                                       $3.32M
+  Short-term Debt                                        $6.45M
+  Current Portion of Long-term Debt                      $2.66M
+----------------------------------------------------------------------
+Total Current Liabilities                               $18.47M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $14.98M
+  Deferred Tax Liability                                 $2.12M
+  Other Liabilities                              $-5,640,881.16
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $11.47M
+======================================================================
+TOTAL LIABILITIES                                       $29.93M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $1.78M
+  Additional Paid-in Capital                             $3.49M
+  Retained Earnings                                     $21.59M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $26.85M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $56.79M
+======================================================================

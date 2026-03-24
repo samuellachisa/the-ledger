@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Energy Corp,
+,,
+Revenue,"$68,732,510.49",100.00%
+Cost of Goods Sold,"$32,311,512.08",47.01%
+Gross Profit,"$36,420,998.41",52.99%
+,,
+Operating Expenses,"$19,851,565.32",28.88%
+Operating Income,"$16,569,433.10",24.11%
+,,
+Interest Expense,"$922,185.98",
+Interest Income,"$399,883.23",
+,,
+Income Before Taxes,"$16,047,130.35",23.35%
+Income Tax Expense,"$3,369,897.37",4.90%
+NET INCOME,"$12,677,232.97",18.44%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Energy Corp,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$7,614,299.73",
+  Accounts Receivable,"$8,068,472.03",
+Total Current Assets,"$17,057,421.98",
+,,
+Non-Current Assets:,,
+  PP&E,"$26,770,778.44",
+  Intangible Assets,"$8,676,917.38",
+Total Non-Current Assets,"$35,447,695.82",
+TOTAL ASSETS,"$58,854,691.80",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$5,338,313.07",
+  Accrued Expenses,"$3,500,032.76",
+  Short-term Debt,"$2,978,630.79",
+Total Current Liabilities,"$13,820,395.23",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$14,366,821.31",
+Total Non-Current Liabilities,"$14,366,821.31",
+TOTAL LIABILITIES,"$25,042,732.54",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$33,811,959.26",
+TOTAL LIABILITIES & EQUITY,"$58,854,691.80",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Energy Corp,
+,,
+Liquidity Ratios,,
+Current Ratio,2.30,x
+Quick Ratio,2.30,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.74,x
+Debt-to-Assets,42.55%,
+Interest Coverage,6.38,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),15.55%,
+Return on Equity (ROE),27.06%,
+Gross Margin,43.81%,
+Operating Margin,14.25%,
+Net Margin,13.31%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.17,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Energy Corp,,
+,,,
+,2023,2024,2025
+Revenue,"$64,757,397.91","$69,268,898.40","$68,732,510.49"
+Net Income,"$7,491,435.24","$9,949,845.90","$9,149,076.57"
+Total Assets,"$71,476,008.26","$52,672,520.02","$58,854,691.80"
+EBITDA,"$11,225,634.26","$9,555,694.63","$9,795,325.42"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,6.97%,-0.77%
+

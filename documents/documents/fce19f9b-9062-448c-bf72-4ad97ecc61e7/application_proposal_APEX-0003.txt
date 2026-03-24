@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0003
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Global Health Ltd
+Industry:         Real Estate
+Tax ID:           99-9164991
+Incorporated:     July 27, 2000
+Employees:        637
+
+Address:          6309 Main Dr
+                  Fairview, FL 44760
+Phone:            (665) 492-6930
+Email:            info@globalhealthltd.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    4.73%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $98.09M
+Net Income:       $10.20M
+Total Assets:     $105.47M
+EBITDA:           $20.38M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  STABLE
+Risk Level:       MEDIUM
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

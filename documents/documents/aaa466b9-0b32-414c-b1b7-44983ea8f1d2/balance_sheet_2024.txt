@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Premier Real Estate Inc
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $24.14M
+  Accounts Receivable, Net                               $9.73M
+  Prepaid Expenses                                       $3.04M
+----------------------------------------------------------------------
+Total Current Assets                                    $36.90M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $40.99M
+  Intangible Assets                                      $9.95M
+  Long-term Investments                                  $9.36M
+  Other Assets                                   $-5,833,391.80
+----------------------------------------------------------------------
+Total Non-Current Assets                                $54.47M
+======================================================================
+TOTAL ASSETS                                            $91.37M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $7.88M
+  Accrued Expenses                                       $4.44M
+  Short-term Debt                                        $4.48M
+  Current Portion of Long-term Debt                      $1.98M
+----------------------------------------------------------------------
+Total Current Liabilities                               $18.78M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $12.88M
+  Deferred Tax Liability                                 $2.24M
+  Other Liabilities                              $-4,202,480.78
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $10.92M
+======================================================================
+TOTAL LIABILITIES                                       $29.71M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $3.79M
+  Additional Paid-in Capital                            $10.88M
+  Retained Earnings                                     $46.99M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $61.66M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $91.37M
+======================================================================

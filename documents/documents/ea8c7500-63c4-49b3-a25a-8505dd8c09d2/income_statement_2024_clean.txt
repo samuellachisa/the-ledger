@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Techs Technologies
+Fiscal Year Ended: December 31, 2025
+Industry: Energy
+----------------------------------------------------------------------
+
+Revenue                                                 $52.89M
+Cost of Goods Sold                                      $34.08M
+----------------------------------------------------------------------
+Gross Profit                                            $18.81M
+
+Operating Expenses:
+  Salaries and Benefits                                  $9.57M
+  Marketing and Sales                                    $4.52M
+  General and Administrative                             $3.40M
+  Depreciation                                           $2.58M
+  Amortization                                           $1.42M
+----------------------------------------------------------------------
+Total Operating Expenses                                $21.49M
+
+Operating Income                                 $-2,682,712.13
+
+EBITDA                                                   $1.32M
+
+Non-Operating Items:
+  Interest Expense                                      $648.4K
+  Interest Income                                       $272.4K
+----------------------------------------------------------------------
+Income Before Taxes                              $-3,058,773.45
+Income Tax Expense (21.0%)                               $0.00
+======================================================================
+NET INCOME                                       $-3,058,773.45
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Manufacturings Systems
+Fiscal Year Ended: December 31, 2025
+Industry: Financial Services
+----------------------------------------------------------------------
+
+Revenue                                                 $16.26M
+Cost of Goods Sold                                       $7.94M
+----------------------------------------------------------------------
+Gross Profit                                             $8.32M
+
+Operating Expenses:
+  Salaries and Benefits                                  $2.82M
+  Marketing and Sales                                    $1.24M
+  General and Administrative                             $1.46M
+  Depreciation                                          $572.8K
+  Amortization                                          $347.8K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $6.44M
+
+Operating Income                                         $1.88M
+
+EBITDA                                                   $2.80M
+
+Non-Operating Items:
+  Interest Expense                                      $283.8K
+  Interest Income                                       $178.4K
+----------------------------------------------------------------------
+Income Before Taxes                                      $1.77M
+Income Tax Expense (21.0%)                             $371.9K
+======================================================================
+NET INCOME                                               $1.40M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

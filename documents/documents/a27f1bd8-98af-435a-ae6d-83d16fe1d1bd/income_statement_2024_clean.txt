@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Finance Systems
+Fiscal Year Ended: December 31, 2025
+Industry: Healthcare
+----------------------------------------------------------------------
+
+Revenue                                                 $41.17M
+Cost of Goods Sold                                      $18.76M
+----------------------------------------------------------------------
+Gross Profit                                            $22.40M
+
+Operating Expenses:
+  Salaries and Benefits                                  $7.02M
+  Marketing and Sales                                    $4.36M
+  General and Administrative                             $3.64M
+  Depreciation                                           $1.62M
+  Amortization                                          $422.9K
+----------------------------------------------------------------------
+Total Operating Expenses                                $17.06M
+
+Operating Income                                         $5.35M
+
+EBITDA                                                   $7.39M
+
+Non-Operating Items:
+  Interest Expense                                      $577.8K
+  Interest Income                                       $286.9K
+----------------------------------------------------------------------
+Income Before Taxes                                      $5.06M
+Income Tax Expense (21.0%)                              $1.06M
+======================================================================
+NET INCOME                                               $3.99M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

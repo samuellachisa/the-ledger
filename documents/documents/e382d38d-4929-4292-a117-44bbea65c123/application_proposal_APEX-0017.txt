@@ -1,0 +1,46 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0017
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Pacific Construction Services
+Industry:         Transportation
+Tax ID:           83-7425184
+Incorporated:     August 12, 2011
+Employees:        1,303
+
+Address:          9003 Market Dr
+                  Clinton, MN 52176
+Phone:            (393) 914-3912
+Email:            info@pacificconstructionservices.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    9.46%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $51.41M
+Net Income:       $6.43M
+Total Assets:     $42.38M
+EBITDA:           $12.01M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  STABLE
+Risk Level:       LOW
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

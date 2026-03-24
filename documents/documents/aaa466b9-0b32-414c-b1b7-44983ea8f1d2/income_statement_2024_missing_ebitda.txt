@@ -1,0 +1,38 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Premier Real Estate Inc
+Fiscal Year Ended: December 31, 2025
+Industry: Energy
+----------------------------------------------------------------------
+
+Revenue                                                $112.93M
+Cost of Goods Sold                                      $54.82M
+----------------------------------------------------------------------
+Gross Profit                                            $58.11M
+
+Operating Expenses:
+  Salaries and Benefits                                 $17.28M
+  Marketing and Sales                                    $7.06M
+  General and Administrative                            $10.95M
+  Depreciation                                           $6.04M
+  Amortization                                           $2.06M
+----------------------------------------------------------------------
+Total Operating Expenses                                $43.39M
+
+Operating Income                                        $14.72M
+
+Non-Operating Items:
+  Interest Expense                                       $1.49M
+  Interest Income                                        $1.13M
+----------------------------------------------------------------------
+Income Before Taxes                                     $14.36M
+Income Tax Expense (21.0%)                              $3.02M
+======================================================================
+NET INCOME                                              $11.35M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

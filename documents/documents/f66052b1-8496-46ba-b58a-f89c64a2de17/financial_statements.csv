@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,First Data Solutions,
+,,
+Revenue,"$70,772,841.06",100.00%
+Cost of Goods Sold,"$40,808,706.15",57.66%
+Gross Profit,"$29,964,134.91",42.34%
+,,
+Operating Expenses,"$25,454,958.82",35.97%
+Operating Income,"$4,509,176.09",6.37%
+,,
+Interest Expense,"$1,033,589.49",
+Interest Income,"$848,914.33",
+,,
+Income Before Taxes,"$4,324,500.92",6.11%
+Income Tax Expense,"$908,145.19",1.28%
+NET INCOME,"$3,416,355.73",4.83%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,First Data Solutions,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$8,816,790.74",
+  Accounts Receivable,"$7,909,578.32",
+Total Current Assets,"$18,141,825.88",
+,,
+Non-Current Assets:,,
+  PP&E,"$29,596,454.68",
+  Intangible Assets,"$3,403,196.41",
+Total Non-Current Assets,"$32,999,651.09",
+TOTAL ASSETS,"$56,797,709.26",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$6,021,988.22",
+  Accrued Expenses,"$3,933,822.18",
+  Short-term Debt,"$5,138,300.82",
+Total Current Liabilities,"$17,174,000.23",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$14,397,837.94",
+Total Non-Current Liabilities,"$14,397,837.94",
+TOTAL LIABILITIES,"$25,998,612.73",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$30,799,096.53",
+TOTAL LIABILITIES & EQUITY,"$56,797,709.26",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,First Data Solutions,
+,,
+Liquidity Ratios,,
+Current Ratio,3.37,x
+Quick Ratio,3.37,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.84,x
+Debt-to-Assets,45.77%,
+Interest Coverage,9.04,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),7.67%,
+Return on Equity (ROE),14.14%,
+Gross Margin,41.78%,
+Operating Margin,19.69%,
+Net Margin,6.15%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.25,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,First Data Solutions,,
+,,,
+,2023,2024,2025
+Revenue,"$70,878,776.60","$64,906,267.69","$70,772,841.06"
+Net Income,"$13,405,431.81","$10,173,485.37","$4,353,929.18"
+Total Assets,"$47,865,468.07","$59,594,066.74","$56,797,709.26"
+EBITDA,"$11,083,830.66","$11,657,136.06","$13,938,459.75"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,-8.43%,9.04%
+

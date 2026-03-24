@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - First Finance Enterprises - FY2025
+======================================================================
+
+Revenue                                                 $77.61M
+Cost of Goods Sold                                      $41.92M
+----------------------------------------------------------------------
+Gross Profit                                            $35.69M
+
+  Salaries and Benefits                                 $13.97M
+  Marketing and Sales                                    $6.98M
+  General and Administrative                             $6.73M
+  Depreciation                                           $3.11M
+  Amortization                                           $1.54M
+----------------------------------------------------------------------
+Total Operating Expenses                                $32.33M
+
+Operating Income                                         $3.35M
+
+EBITDA                                                   $8.01M
+
+Non-Operating Items:
+  Interest Expense                                       $2.06M
+  Interest Income                                       $864.8K
+----------------------------------------------------------------------
+Income Before Taxes                                      $2.16M
+Income Tax Expense (21.0%)                             $453.0K
+======================================================================
+NET INCOME                                               $1.70M
+======================================================================

@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Retail Technologies
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $8.11M
+  Accounts Receivable, Net                              $11.31M
+  Prepaid Expenses                                       $2.01M
+----------------------------------------------------------------------
+Total Current Assets                                    $21.43M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $40.24M
+  Intangible Assets                                      $5.18M
+  Long-term Investments                                  $5.11M
+  Other Assets                                          $23.10M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $73.63M
+======================================================================
+TOTAL ASSETS                                            $95.06M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $8.74M
+  Accrued Expenses                                       $2.93M
+  Short-term Debt                                        $4.24M
+  Current Portion of Long-term Debt                      $2.41M
+----------------------------------------------------------------------
+Total Current Liabilities                               $18.33M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $14.99M
+  Deferred Tax Liability                                 $2.15M
+  Other Liabilities                              $-4,096,884.64
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $13.04M
+======================================================================
+TOTAL LIABILITIES                                       $31.37M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $9.23M
+  Additional Paid-in Capital                            $13.02M
+  Retained Earnings                                     $41.43M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $63.69M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $95.06M
+======================================================================

@@ -1,0 +1,40 @@
+======================================================================
+  INCOME STATEMENT
+======================================================================
+  Company: Manufacturing Partners
+  Fiscal Year: 2025
+  Generated: 2026-03-24
+----------------------------------------------------------------------
+
+Revenue                                                 $42.02M
+Cost of Goods Sold                                      $20.58M
+----------------------------------------------------------------------
+Gross Profit                                            $21.44M
+
+Operating Expenses:
+  Salaries and Benefits                                  $7.03M
+  Marketing and Sales                                    $4.54M
+  General and Administrative                             $2.93M
+  Depreciation                                           $2.14M
+  Amortization                                          $673.7K
+----------------------------------------------------------------------
+Total Operating Expenses                                $17.32M
+
+Operating Income                                         $4.13M
+
+EBITDA                                                   $6.94M
+
+Non-Operating Items:
+  Interest Expense                                       $1.10M
+  Interest Income                                       $458.8K
+----------------------------------------------------------------------
+Income Before Taxes                                      $3.49M
+Income Tax Expense (21.0%)                             $732.0K
+======================================================================
+NET INCOME                                               $2.75M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

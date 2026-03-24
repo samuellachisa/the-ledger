@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - Summit Finance Partners - FY2025
+======================================================================
+
+Revenue                                                 $26.87M
+Cost of Goods Sold                                      $15.65M
+----------------------------------------------------------------------
+Gross Profit                                            $11.21M
+
+  Salaries and Benefits                                  $3.40M
+  Marketing and Sales                                    $2.15M
+  General and Administrative                             $2.54M
+  Depreciation                                          $952.5K
+  Amortization                                          $408.5K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $9.46M
+
+Operating Income                                         $1.76M
+
+EBITDA                                                   $3.12M
+
+Non-Operating Items:
+  Interest Expense                                      $428.7K
+  Interest Income                                       $196.2K
+----------------------------------------------------------------------
+Income Before Taxes                                      $1.52M
+Income Tax Expense (21.0%)                             $319.9K
+======================================================================
+NET INCOME                                               $1.20M
+======================================================================

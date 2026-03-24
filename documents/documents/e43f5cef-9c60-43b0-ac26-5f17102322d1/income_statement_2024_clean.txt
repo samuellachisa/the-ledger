@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Summit Consulting Holdings
+Fiscal Year Ended: December 31, 2025
+Industry: Hospitality
+----------------------------------------------------------------------
+
+Revenue                                                 $24.01M
+Cost of Goods Sold                                      $14.25M
+----------------------------------------------------------------------
+Gross Profit                                             $9.76M
+
+Operating Expenses:
+  Salaries and Benefits                                  $3.62M
+  Marketing and Sales                                    $1.87M
+  General and Administrative                             $1.58M
+  Depreciation                                           $1.22M
+  Amortization                                          $668.7K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $8.96M
+
+Operating Income                                        $798.4K
+
+EBITDA                                                   $2.68M
+
+Non-Operating Items:
+  Interest Expense                                      $316.0K
+  Interest Income                                       $235.7K
+----------------------------------------------------------------------
+Income Before Taxes                                     $718.1K
+Income Tax Expense (21.0%)                             $150.8K
+======================================================================
+NET INCOME                                              $567.3K
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

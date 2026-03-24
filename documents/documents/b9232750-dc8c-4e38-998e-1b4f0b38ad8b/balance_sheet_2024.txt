@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Global Financial Services Solutions
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                             $17.49M
+  Accounts Receivable, Net                              $12.62M
+  Prepaid Expenses                                       $1.78M
+----------------------------------------------------------------------
+Total Current Assets                                    $31.89M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $59.85M
+  Intangible Assets                                      $9.10M
+  Long-term Investments                                 $13.07M
+  Other Assets                                  $-11,354,693.44
+----------------------------------------------------------------------
+Total Non-Current Assets                                $70.66M
+======================================================================
+TOTAL ASSETS                                           $102.55M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $8.63M
+  Accrued Expenses                                       $3.25M
+  Short-term Debt                                       $13.63M
+  Current Portion of Long-term Debt                      $4.67M
+----------------------------------------------------------------------
+Total Current Liabilities                               $30.18M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $32.62M
+  Deferred Tax Liability                                 $5.45M
+  Other Liabilities                                      $1.76M
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $39.83M
+======================================================================
+TOTAL LIABILITIES                                       $70.01M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.89M
+  Additional Paid-in Capital                             $4.48M
+  Retained Earnings                                     $25.17M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $32.54M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                           $102.55M
+======================================================================

@@ -1,0 +1,58 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Advanced Manufacturing Systems
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $2.55M
+  Accounts Receivable, Net                               $3.49M
+  Inventory                                              $2.60M
+  Prepaid Expenses                                      $672.4K
+----------------------------------------------------------------------
+Total Current Assets                                     $9.32M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                     $9.51M
+  Intangible Assets                                      $1.49M
+  Long-term Investments                                  $1.46M
+  Other Assets                                   $-5,536,918.61
+----------------------------------------------------------------------
+Total Non-Current Assets                                 $6.92M
+======================================================================
+TOTAL ASSETS                                            $16.23M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $1.67M
+  Accrued Expenses                                       $1.01M
+  Short-term Debt                                        $1.23M
+  Current Portion of Long-term Debt                     $669.7K
+----------------------------------------------------------------------
+Total Current Liabilities                                $4.57M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $5.07M
+  Deferred Tax Liability                                $601.0K
+  Other Liabilities                                     $689.2K
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $6.36M
+======================================================================
+TOTAL LIABILITIES                                       $10.94M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                          $643.1K
+  Additional Paid-in Capital                            $795.7K
+  Retained Earnings                                      $3.86M
+----------------------------------------------------------------------
+Total Stockholders' Equity                               $5.29M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $16.23M
+======================================================================

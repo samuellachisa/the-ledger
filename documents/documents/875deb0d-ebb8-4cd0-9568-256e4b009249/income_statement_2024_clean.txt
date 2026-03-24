@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: American Agriculture Inc
+Fiscal Year Ended: December 31, 2025
+Industry: Energy
+----------------------------------------------------------------------
+
+Revenue                                                 $30.16M
+Cost of Goods Sold                                      $17.33M
+----------------------------------------------------------------------
+Gross Profit                                            $12.83M
+
+Operating Expenses:
+  Salaries and Benefits                                  $5.22M
+  Marketing and Sales                                    $1.77M
+  General and Administrative                             $2.90M
+  Depreciation                                           $1.36M
+  Amortization                                          $703.9K
+----------------------------------------------------------------------
+Total Operating Expenses                                $11.95M
+
+Operating Income                                        $875.3K
+
+EBITDA                                                   $2.94M
+
+Non-Operating Items:
+  Interest Expense                                      $593.5K
+  Interest Income                                       $432.9K
+----------------------------------------------------------------------
+Income Before Taxes                                     $714.7K
+Income Tax Expense (21.0%)                             $150.1K
+======================================================================
+NET INCOME                                              $564.6K
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

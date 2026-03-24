@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Logistics Corp
+Fiscal Year Ended: December 31, 2025
+Industry: Hospitality
+----------------------------------------------------------------------
+
+Revenue                                                  $9.91M
+Cost of Goods Sold                                       $5.64M
+----------------------------------------------------------------------
+Gross Profit                                             $4.27M
+
+Operating Expenses:
+  Salaries and Benefits                                  $1.84M
+  Marketing and Sales                                    $1.14M
+  General and Administrative                            $769.0K
+  Depreciation                                          $436.8K
+  Amortization                                          $159.4K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $4.34M
+
+Operating Income                                    $-70,794.49
+
+EBITDA                                                  $525.5K
+
+Non-Operating Items:
+  Interest Expense                                      $236.0K
+  Interest Income                                        $70.7K
+----------------------------------------------------------------------
+Income Before Taxes                                $-236,008.89
+Income Tax Expense (21.0%)                               $0.00
+======================================================================
+NET INCOME                                         $-236,008.89
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

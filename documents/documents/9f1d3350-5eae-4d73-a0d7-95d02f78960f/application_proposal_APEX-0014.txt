@@ -1,0 +1,48 @@
+======================================================================
+           LOAN APPLICATION PROPOSAL
+======================================================================
+
+Application ID: APEX-0014
+Date: March 24, 2026
+
+----------------------------------------------------------------------
+APPLICANT INFORMATION
+----------------------------------------------------------------------
+Company Name:     Retail Technologies
+Industry:         Education
+Tax ID:           76-7381684
+Incorporated:     January 09, 2015
+Employees:        505
+
+Address:          4166 Main Dr
+                  Riverside, WI 89471
+Phone:            (810) 833-3697
+Email:            info@retailtechnologies.com
+
+----------------------------------------------------------------------
+LOAN REQUEST DETAILS
+----------------------------------------------------------------------
+Requested Amount: $5.00M
+Purpose:          Working Capital / Expansion
+Term:             60 months
+Proposed Rate:    9.39%
+
+----------------------------------------------------------------------
+FINANCIAL SUMMARY
+----------------------------------------------------------------------
+Annual Revenue:   $87.61M
+Net Income:       $9.45M
+Total Assets:     $95.06M
+EBITDA:           $10.54M
+
+----------------------------------------------------------------------
+RISK ASSESSMENT
+----------------------------------------------------------------------
+Company Profile:  STABLE
+Risk Level:       LOW
+
+Active Compliance Flags:
+
+======================================================================
+This proposal is subject to credit approval and final due diligence.
+======================================================================

@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Summit Finance Ltd
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $6.25M
+  Accounts Receivable, Net                               $6.58M
+  Prepaid Expenses                                      $908.5K
+----------------------------------------------------------------------
+Total Current Assets                                    $13.74M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $22.12M
+  Intangible Assets                                      $7.31M
+  Long-term Investments                                  $2.91M
+  Other Assets                                           $5.30M
+----------------------------------------------------------------------
+Total Non-Current Assets                                $37.65M
+======================================================================
+TOTAL ASSETS                                            $51.38M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $4.76M
+  Accrued Expenses                                       $1.70M
+  Short-term Debt                                        $3.28M
+  Current Portion of Long-term Debt                      $2.49M
+----------------------------------------------------------------------
+Total Current Liabilities                               $12.23M
+
+Non-Current Liabilities:
+  Long-term Debt                                        $16.10M
+  Deferred Tax Liability                                 $2.23M
+  Other Liabilities                              $-1,926,167.47
+----------------------------------------------------------------------
+Total Non-Current Liabilities                           $16.41M
+======================================================================
+TOTAL LIABILITIES                                       $28.64M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.47M
+  Additional Paid-in Capital                             $4.19M
+  Retained Earnings                                     $16.08M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $22.74M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $51.38M
+======================================================================

@@ -1,0 +1,40 @@
+======================================================================
+                     CONSOLIDATED INCOME STATEMENT
+======================================================================
+Company: Medias Corp
+Fiscal Year Ended: December 31, 2025
+Industry: Construction
+----------------------------------------------------------------------
+
+Revenue                                                $120.28M
+Cost of Goods Sold                                      $60.82M
+----------------------------------------------------------------------
+Gross Profit                                            $59.46M
+
+Operating Expenses:
+  Salaries and Benefits                                 $24.03M
+  Marketing and Sales                                    $9.68M
+  General and Administrative                            $11.13M
+  Depreciation                                           $7.11M
+  Amortization                                           $2.33M
+----------------------------------------------------------------------
+Total Operating Expenses                                $54.29M
+
+Operating Income                                         $5.18M
+
+EBITDA                                                  $14.62M
+
+Non-Operating Items:
+  Interest Expense                                       $2.56M
+  Interest Income                                       $931.5K
+----------------------------------------------------------------------
+Income Before Taxes                                      $3.55M
+Income Tax Expense (21.0%)                             $745.5K
+======================================================================
+NET INCOME                                               $2.80M
+======================================================================
+
+Notes:
+1. All amounts in USD
+2. Prepared in accordance with GAAP
+3. Tax rate: 21.0%

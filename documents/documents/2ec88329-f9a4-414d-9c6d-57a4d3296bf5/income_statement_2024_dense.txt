@@ -1,0 +1,30 @@
+======================================================================
+INCOME STATEMENT - Pacific Tech Solutions - FY2025
+======================================================================
+
+Revenue                                                  $8.29M
+Cost of Goods Sold                                       $4.89M
+----------------------------------------------------------------------
+Gross Profit                                             $3.41M
+
+  Salaries and Benefits                                  $1.48M
+  Marketing and Sales                                   $869.4K
+  General and Administrative                            $717.2K
+  Depreciation                                          $369.9K
+  Amortization                                          $114.4K
+----------------------------------------------------------------------
+Total Operating Expenses                                 $3.55M
+
+Operating Income                                   $-144,861.34
+
+EBITDA                                                  $339.5K
+
+Non-Operating Items:
+  Interest Expense                                      $124.6K
+  Interest Income                                        $47.4K
+----------------------------------------------------------------------
+Income Before Taxes                                $-222,092.27
+Income Tax Expense (21.0%)                               $0.00
+======================================================================
+NET INCOME                                         $-222,092.27
+======================================================================

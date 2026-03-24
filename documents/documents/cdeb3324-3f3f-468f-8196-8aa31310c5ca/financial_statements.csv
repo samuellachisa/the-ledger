@@ -1,0 +1,86 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,National Health Systems,
+,,
+Revenue,"$41,925,005.86",100.00%
+Cost of Goods Sold,"$21,462,097.13",51.19%
+Gross Profit,"$20,462,908.73",48.81%
+,,
+Operating Expenses,"$13,639,707.89",32.53%
+Operating Income,"$6,823,200.85",16.27%
+,,
+Interest Expense,"$836,108.55",
+Interest Income,"$442,765.42",
+,,
+Income Before Taxes,"$6,429,857.72",15.34%
+Income Tax Expense,"$1,350,270.12",3.22%
+NET INCOME,"$5,079,587.60",12.12%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,National Health Systems,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$8,281,043.03",
+  Accounts Receivable,"$5,786,788.15",
+Total Current Assets,"$14,906,331.30",
+,,
+Non-Current Assets:,,
+  PP&E,"$18,468,607.43",
+  Intangible Assets,"$3,996,851.98",
+Total Non-Current Assets,"$22,465,459.41",
+TOTAL ASSETS,"$33,716,916.58",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$3,199,702.49",
+  Accrued Expenses,"$2,070,288.01",
+  Short-term Debt,"$2,543,502.62",
+Total Current Liabilities,"$9,057,937.01",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$7,347,906.40",
+Total Non-Current Liabilities,"$7,347,906.40",
+TOTAL LIABILITIES,"$15,555,548.71",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$18,161,367.87",
+TOTAL LIABILITIES & EQUITY,"$33,716,916.58",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,National Health Systems,
+,,
+Liquidity Ratios,,
+Current Ratio,2.91,x
+Quick Ratio,2.91,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.86,x
+Debt-to-Assets,46.14%,
+Interest Coverage,15.30,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),16.25%,
+Return on Equity (ROE),30.18%,
+Gross Margin,44.73%,
+Operating Margin,24.55%,
+Net Margin,13.07%,
+,,
+Efficiency Ratios,,
+Asset Turnover,1.24,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,National Health Systems,,
+,,,
+,2023,2024,2025
+Revenue,"$44,245,189.13","$43,606,227.63","$41,925,005.86"
+Net Income,"$5,503,174.25","$6,020,261.14","$5,480,603.92"
+Total Assets,"$35,632,094.48","$47,500,093.93","$33,716,916.58"
+EBITDA,"$8,958,981.19","$8,008,066.62","$10,292,279.50"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,-1.44%,-3.86%
+

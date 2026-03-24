@@ -1,0 +1,87 @@
+--- SHEET: Income ---
+INCOME STATEMENT,,FY2025
+Company:,Global Healthcare Holdings,
+,,
+Revenue,"$15,286,678.34",100.00%
+Cost of Goods Sold,"$7,416,163.24",48.51%
+Gross Profit,"$7,870,515.10",51.49%
+,,
+Operating Expenses,"$4,984,091.37",32.60%
+Operating Income,"$2,886,423.73",18.88%
+,,
+Interest Expense,"$382,537.94",
+Interest Income,"$168,490.03",
+,,
+Income Before Taxes,"$2,672,375.82",17.48%
+Income Tax Expense,"$561,198.92",3.67%
+NET INCOME,"$2,111,176.90",13.81%
+
+--- SHEET: Balance ---
+BALANCE SHEET,,"As of Dec 31, 2025"
+Company:,Global Healthcare Holdings,
+,,
+ASSETS,,
+Current Assets:,,
+  Cash,"$2,183,665.72",
+  Accounts Receivable,"$2,085,622.87",
+  Inventory,"$841,459.56",
+Total Current Assets,"$5,416,481.72",
+,,
+Non-Current Assets:,,
+  PP&E,"$9,641,046.13",
+  Intangible Assets,"$913,485.61",
+Total Non-Current Assets,"$10,554,531.74",
+TOTAL ASSETS,"$16,844,584.17",
+,,
+LIABILITIES,,
+Current Liabilities:,,
+  Accounts Payable,"$778,658.71",
+  Accrued Expenses,"$881,045.77",
+  Short-term Debt,"$1,716,337.82",
+Total Current Liabilities,"$3,974,808.74",
+,,
+Non-Current Liabilities:,,
+  Long-term Debt,"$3,855,695.36",
+Total Non-Current Liabilities,"$3,855,695.36",
+TOTAL LIABILITIES,"$7,484,580.51",
+,,
+EQUITY,,
+Total Stockholders' Equity,"$9,360,003.66",
+TOTAL LIABILITIES & EQUITY,"$16,844,584.17",
+
+--- SHEET: Ratios ---
+FINANCIAL RATIOS,,FY2025
+Company:,Global Healthcare Holdings,
+,,
+Liquidity Ratios,,
+Current Ratio,2.47,x
+Quick Ratio,1.94,x
+,,
+Leverage Ratios,,
+Debt-to-Equity,0.80,x
+Debt-to-Assets,44.43%,
+Interest Coverage,7.54,x
+,,
+Profitability Ratios,,
+Return on Assets (ROA),14.08%,
+Return on Equity (ROE),25.34%,
+Gross Margin,41.50%,
+Operating Margin,17.56%,
+Net Margin,15.52%,
+,,
+Efficiency Ratios,,
+Asset Turnover,0.91,x
+
+--- SHEET: Comparison ---
+3-YEAR FINANCIAL COMPARISON,,,
+Company:,Global Healthcare Holdings,,
+,,,
+,2023,2024,2025
+Revenue,"$12,125,230.00","$14,077,623.04","$15,286,678.34"
+Net Income,"$-436,640.96","$1,751,153.84","$2,371,869.72"
+Total Assets,"$13,922,955.50","$14,282,065.98","$16,844,584.17"
+EBITDA,"$1,754,495.97","$2,124,049.74","$2,684,169.12"
+,,,
+Year-over-Year Growth,,,
+Revenue Growth,-,16.10%,8.59%
+

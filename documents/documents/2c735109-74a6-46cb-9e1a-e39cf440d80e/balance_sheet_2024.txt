@@ -1,0 +1,57 @@
+======================================================================
+                     CONSOLIDATED BALANCE SHEET
+======================================================================
+Company: Consulting Partners
+As of: December 31, 2025
+----------------------------------------------------------------------
+
+ASSETS
+----------------------------------------------------------------------
+Current Assets:
+  Cash and Cash Equivalents                              $6.98M
+  Accounts Receivable, Net                               $5.49M
+  Prepaid Expenses                                       $1.59M
+----------------------------------------------------------------------
+Total Current Assets                                    $14.07M
+
+Non-Current Assets:
+  Property, Plant and Equipment, Net                    $22.17M
+  Intangible Assets                                      $3.94M
+  Long-term Investments                                  $3.30M
+  Other Assets                                   $-2,281,755.74
+----------------------------------------------------------------------
+Total Non-Current Assets                                $27.13M
+======================================================================
+TOTAL ASSETS                                            $41.19M
+======================================================================
+
+LIABILITIES
+----------------------------------------------------------------------
+Current Liabilities:
+  Accounts Payable                                       $5.44M
+  Accrued Expenses                                       $3.02M
+  Short-term Debt                                        $2.34M
+  Current Portion of Long-term Debt                      $1.39M
+----------------------------------------------------------------------
+Total Current Liabilities                               $12.20M
+
+Non-Current Liabilities:
+  Long-term Debt                                         $9.52M
+  Deferred Tax Liability                                 $1.31M
+  Other Liabilities                              $-2,845,833.86
+----------------------------------------------------------------------
+Total Non-Current Liabilities                            $7.98M
+======================================================================
+TOTAL LIABILITIES                                       $20.18M
+======================================================================
+
+STOCKHOLDERS' EQUITY
+----------------------------------------------------------------------
+  Common Stock                                           $2.52M
+  Additional Paid-in Capital                             $2.17M
+  Retained Earnings                                     $16.32M
+----------------------------------------------------------------------
+Total Stockholders' Equity                              $21.01M
+======================================================================
+TOTAL LIABILITIES AND EQUITY                            $41.19M
+======================================================================
