@@ -1,0 +1,29 @@
+{
+  "application_id": "test",
+  "examination_date": "2026-03-24",
+  "narrative": [
+    "Test step 1.",
+    "Test step 2."
+  ],
+  "projection_state": {},
+  "models": [],
+  "package_hash_chain": "9896e0c915ac387a3451098f339ce0dc53fa2457caa68ef811a62f5d401fc91f",
+  "events": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "type": "Test",
+      "payload": {
+        "k": "v"
+      },
+      "recorded_at": "2026-03-24T00:00:00"
+    },
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "type": "Test",
+      "payload": {
+        "k": "v2"
+      },
+      "recorded_at": "2026-03-24T00:00:01"
+    }
+  ]
+}

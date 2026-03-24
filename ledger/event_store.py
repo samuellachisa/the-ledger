@@ -9,6 +9,7 @@ from typing import Any, Callable, Coroutine, Optional, TypeVar
 from uuid import UUID, uuid4
 import asyncpg
 from ledger.schema.events import DomainEvent, EVENT_REGISTRY, OptimisticConcurrencyError
+from ledger.upcasters import apply_upcasters
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,13 @@ class StoredEvent:
         self.event_version = row["event_version"]
         self.stream_position = row["stream_position"]
         self.global_position = row["global_position"]
-        self.payload = dict(row["payload"])
-        self.metadata = dict(row["metadata"])
         self.recorded_at = row["recorded_at"]
+        
+        raw_payload = dict(row["payload"])
+        raw_version = row["event_version"]
+        self.event_version, self.payload = apply_upcasters(self.event_type, raw_version, raw_payload)
+        
+        self.metadata = dict(row["metadata"])
 
 def extract_aggregate_type(stream_id: str) -> str:
     """
