@@ -15,6 +15,7 @@ import asyncio
 import argparse
 import os
 import sys
+import json
 from pathlib import Path
 from uuid import UUID
 import hashlib
@@ -86,7 +87,7 @@ async def run_document_phase(app_id: str, event_store: EventStore, registry_clie
     agent = DocumentProcessingAgent(event_store, registry_client)
     result = await agent.process(state)
     
-    print(f"[DocumentProcessing] ✓ Complete")
+    print(f"[DocumentProcessing] OK Complete")
     print(f"  - Extracted facts: {len(result.get('extracted_facts', {}))}")
     print(f"  - Events generated: {len(result.get('events', []))}")
     
@@ -118,7 +119,7 @@ async def run_credit_phase(app_id: str, event_store: EventStore, registry_client
     agent = CreditAnalysisAgent(event_store, registry_client)
     result = await agent.process(state)
     
-    print(f"[CreditAnalysis] ✓ Complete")
+    print(f"[CreditAnalysis] OK Complete")
     print(f"  - Risk tier: {result.get('analysis_result', {}).get('risk_tier', 'N/A')}")
     print(f"  - Confidence: {result.get('analysis_result', {}).get('confidence', 'N/A')}")
     print(f"  - Events generated: {len(result.get('events', []))}")
@@ -152,7 +153,7 @@ async def run_fraud_phase(app_id: str, event_store: EventStore, registry_client:
     agent = FraudDetectionAgent(event_store)
     result = await agent.process(state)
     
-    print(f"[FraudDetection] ✓ Complete")
+    print(f"[FraudDetection] OK Complete")
     print(f"  - Fraud score: {result.get('fraud_score', 0.0):.2f}")
     print(f"  - Anomalies found: {len(result.get('anomalies', []))}")
     print(f"  - Events generated: {len(result.get('events', []))}")
@@ -199,7 +200,7 @@ async def run_compliance_phase(app_id: str, event_store: EventStore, registry_cl
     agent = ComplianceAgent(event_store)
     result = await agent.process(state)
     
-    print(f"[Compliance] ✓ Complete")
+    print(f"[Compliance] OK Complete")
     print(f"  - Rules evaluated: {result.get('rules_evaluated', 0)}")
     print(f"  - Hard block: {result.get('hard_block', False)}")
     print(f"  - Events generated: {len(result.get('events', []))}")
@@ -245,7 +246,7 @@ async def run_decision_phase(app_id: str, event_store: EventStore, registry_clie
     agent = DecisionOrchestratorAgent(event_store)
     result = await agent.process(state)
     
-    print(f"[DecisionOrchestrator] ✓ Complete")
+    print(f"[DecisionOrchestrator] OK Complete")
     print(f"  - Recommendation: {result.get('final_decision', {}).get('recommendation', 'N/A')}")
     print(f"  - Confidence: {result.get('final_decision', {}).get('confidence', 'N/A')}")
     print(f"  - Events generated: {len(result.get('events', []))}")
@@ -266,7 +267,7 @@ async def run_full_pipeline(app_id: str, event_store: EventStore, registry_clien
     await run_decision_phase(app_id, event_store, registry_client)
     
     print(f"\n{'#'*60}")
-    print(f"# ✓ FULL PIPELINE COMPLETE: {app_id}")
+    print(f"# OK FULL PIPELINE COMPLETE: {app_id}")
     print(f"{'#'*60}\n")
 
 
@@ -287,7 +288,29 @@ async def main():
     
     # Initialize event store and registry client
     import asyncpg
-    pool = await asyncpg.create_pool(args.db_url)
+    async def _init_conn(conn):
+        """
+        Match the encoding behavior used in `tests/conftest.py`.
+        Without this, asyncpg's default jsonb codec rejects dict payloads
+        containing UUID/datetime objects.
+        """
+        from uuid import UUID as _UUID
+        from datetime import datetime, date
+
+        def _default(obj):
+            if isinstance(obj, _UUID):
+                return str(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+        def _encoder(val):
+            return json.dumps(val, default=_default)
+
+        await conn.set_type_codec("jsonb", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+        await conn.set_type_codec("json", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+
+    pool = await asyncpg.create_pool(args.db_url, min_size=2, max_size=6, init=_init_conn)
     event_store = EventStore(pool)
     registry_client = ApplicantRegistryClient(pool)
     
@@ -306,7 +329,7 @@ async def main():
         elif args.phase == "full":
             await run_full_pipeline(args.app, event_store, registry_client)
         
-        print(f"\n✓ Pipeline complete for {args.app}")
+        print(f"\nOK Pipeline complete for {args.app}")
         
     finally:
         await pool.close()

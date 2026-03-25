@@ -29,8 +29,10 @@ class BaseApexAgent:
     def start_session(self, application_id: UUID, context_source: str = "") -> AgentSessionStarted:
         """Gas Town: Append AgentSessionStarted before any work."""
         config = {"session_id": str(self.session_id)}
-        if context_source:
-            config["context_source"] = context_source
+        # Gas Town contract: every session explicitly declares where its context comes from.
+        # - "fresh" for a new run
+        # - "prior_session_replay:{id}" when recovering
+        config["context_source"] = context_source or "fresh"
         if self._recover_from_session:
             config["recovered_from_session"] = str(self._recover_from_session)
             

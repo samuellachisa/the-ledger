@@ -37,7 +37,7 @@ def main() -> None:
     if proc.returncode != 0:
         raise SystemExit(f"Test run failed with exit code {proc.returncode}")
 
-    print(f"✓ Wrote {out_path}")
+    print(f"OK Wrote {out_path}")
 
 
 if __name__ == "__main__":

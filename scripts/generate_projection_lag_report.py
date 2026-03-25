@@ -43,7 +43,7 @@ def main() -> None:
         print(proc.stderr, file=sys.stderr)
         raise SystemExit(f"Projection lag report failed with exit code {proc.returncode}")
 
-    print(f"✓ Wrote {out_path}")
+    print(f"OK Wrote {out_path}")
 
 
 if __name__ == "__main__":

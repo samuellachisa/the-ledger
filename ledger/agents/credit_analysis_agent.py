@@ -6,6 +6,7 @@ from typing import TypedDict, List, Dict, Any
 from uuid import UUID
 from ledger.agents.base_agent import BaseApexAgent
 from ledger.schema.events import DomainEvent, CreditAnalysisCompleted, DecisionOutcome, CreditRecordOpened
+from langgraph.graph import StateGraph, END
 
 class CreditState(TypedDict):
     application_id: UUID
@@ -22,13 +23,40 @@ class CreditAnalysisAgent(BaseApexAgent):
         self.registry = registry_client
         
     async def process(self, state: CreditState) -> CreditState:
-        """Standard compilation wrapper simulating LangGraph flow."""
-        state = await self.validate_inputs(state)
-        state = await self.open_aggregate_record(state)
-        state = await self.load_external_data(state)
-        state = await self.analyze_credit_risk(state)
-        await self.write_output_node(state)
-        return state
+        """Run through a real compiled LangGraph state machine."""
+        graph = StateGraph(CreditState)
+
+        async def validate_inputs_node(s: CreditState) -> CreditState:
+            return await self.validate_inputs(s)
+
+        async def open_aggregate_record_node(s: CreditState) -> CreditState:
+            return await self.open_aggregate_record(s)
+
+        async def load_external_data_node(s: CreditState) -> CreditState:
+            return await self.load_external_data(s)
+
+        async def analyze_credit_risk_node(s: CreditState) -> CreditState:
+            return await self.analyze_credit_risk(s)
+
+        async def write_output_node_wrapper(s: CreditState) -> CreditState:
+            await self.write_output_node(s)
+            return s
+
+        graph.add_node("validate_inputs", validate_inputs_node)
+        graph.add_node("open_aggregate_record", open_aggregate_record_node)
+        graph.add_node("load_external_data", load_external_data_node)
+        graph.add_node("analyze_credit_risk", analyze_credit_risk_node)
+        graph.add_node("write_output_node", write_output_node_wrapper)
+
+        graph.set_entry_point("validate_inputs")
+        graph.add_edge("validate_inputs", "open_aggregate_record")
+        graph.add_edge("open_aggregate_record", "load_external_data")
+        graph.add_edge("load_external_data", "analyze_credit_risk")
+        graph.add_edge("analyze_credit_risk", "write_output_node")
+        graph.add_edge("write_output_node", END)
+
+        app = graph.compile()
+        return await app.ainvoke(state)
 
     async def validate_inputs(self, state: CreditState) -> CreditState:
         # Gas Town Session
@@ -122,11 +150,28 @@ class CreditAnalysisAgent(BaseApexAgent):
         outcome = DecisionOutcome.APPROVE
         data_quality_caveats = []
         
-        # In a real scenario, this involves 1 LLM call to get baseline analysis parameters.
-        # We track LLM usage metrics:
-        tokens_in = 1500
-        tokens_out = 400
-        cost = 0.05
+        # Baseline credit analysis is modeled as 1 tracked LLM call.
+        # Policy constraints are still enforced deterministically in Python.
+        CREDIT_SYSTEM_PROMPT = """
+You are a credit analysis engine.
+
+You will be given historical financials, extracted current-year facts, and
+document quality/compliance context.
+
+Return JSON: {"risk_tier": "LOW|MEDIUM|HIGH", "confidence": float, "rationale": str}
+
+IMPORTANT: Do not decide final approval/decline. Python will enforce hard rules
+and can override the model recommendation.
+"""
+        user_message = (
+            f"Historical financials (3yr): {data.get('financials', [])}. "
+            f"Compliance flags: {data.get('flags', [])}. "
+            f"Document quality: {data.get('quality_flags', {})}. "
+        )
+        llm_resp = await self._call_llm(CREDIT_SYSTEM_PROMPT, user_message, model="gpt-4-turbo")
+        tokens_in = int(getattr(llm_resp.usage, "input_tokens", 0))
+        tokens_out = int(getattr(llm_resp.usage, "output_tokens", 0))
+        cost = self._calculate_cost(tokens_in, tokens_out, "gpt-4-turbo")
         
         # 1. Active HIGH compliance flag
         has_high_flag = any(f["severity"] == "HIGH" for f in data.get("flags", []))

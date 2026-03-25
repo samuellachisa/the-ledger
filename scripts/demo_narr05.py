@@ -25,6 +25,10 @@ from uuid import UUID
 
 import asyncpg
 
+# Ensure the repository root is on sys.path so `import src.*` works when the
+# script is executed as `python scripts/demo_narr05.py`.
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.event_store import EventStore
 from src.upcasting.registry import UpcasterRegistry
 
@@ -160,7 +164,29 @@ async def main() -> None:
     application_uuid = _uuid_from_string(app_id)
     company_uuid = _uuid_from_string(company_id)
 
-    pool = await asyncpg.create_pool(args.db_url, min_size=2, max_size=6)
+    async def _init_conn(conn):
+        """
+        Match the encoding behavior used in `tests/conftest.py`.
+        Without this, asyncpg's default jsonb codec rejects dict payloads
+        containing UUID/datetime objects.
+        """
+        from uuid import UUID as _UUID
+        from datetime import datetime, date
+
+        def _default(obj):
+            if isinstance(obj, _UUID):
+                return str(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+        def _encoder(val):
+            return json.dumps(val, default=_default)
+
+        await conn.set_type_codec("jsonb", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+        await conn.set_type_codec("json", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+
+    pool = await asyncpg.create_pool(args.db_url, min_size=2, max_size=6, init=_init_conn)
     event_store = EventStore(pool, UpcasterRegistry())
     registry_client = ApplicantRegistryClient(pool)
 

@@ -60,7 +60,7 @@ async def _run(db_url: str, artifacts_dir: str) -> None:
             for node, cost in breakdown[:30]:
                 f.write(f"  {node[:60]:<60} ${float(cost):.2f}\n")
 
-        print(f"✓ Wrote {out_path}")
+        print(f"OK Wrote {out_path}")
 
     finally:
         await pool.close()

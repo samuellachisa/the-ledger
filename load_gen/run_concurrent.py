@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import random
 import time
+import sys
+from pathlib import Path
 from collections import Counter
 from dataclasses import dataclass
 from decimal import Decimal
@@ -25,9 +28,13 @@ from uuid import UUID, uuid5, uuid4, NAMESPACE_DNS
 
 import asyncpg
 
+# Ensure the repository root is on sys.path so `import src.*` works.
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.event_store import EventStore
 from src.upcasting.registry import UpcasterRegistry
-from ledger.schema.events import LoanApplicationSubmitted, OptimisticConcurrencyError
+from src.models.events import OptimisticConcurrencyError
+from ledger.schema.events import LoanApplicationSubmitted
 
 
 def _det_uuid(key: str) -> UUID:
@@ -141,7 +148,28 @@ async def _run_application(
 
 
 async def _run(applications: int, concurrency: int, db_url: str) -> None:
-    pool = await asyncpg.create_pool(db_url, min_size=2, max_size=8)
+    async def _init_conn(conn):
+        """
+        Match encoding behavior used in `tests/conftest.py`.
+        Ensures asyncpg can serialize UUID/datetime inside jsonb payloads.
+        """
+        from uuid import UUID as _UUID
+        from datetime import datetime, date
+
+        def _default(obj):
+            if isinstance(obj, _UUID):
+                return str(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+        def _encoder(val):
+            return json.dumps(val, default=_default)
+
+        await conn.set_type_codec("jsonb", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+        await conn.set_type_codec("json", encoder=_encoder, decoder=json.loads, schema="pg_catalog")
+
+    pool = await asyncpg.create_pool(db_url, min_size=2, max_size=8, init=_init_conn)
     try:
         store = EventStore(pool, UpcasterRegistry())
 
@@ -178,7 +206,7 @@ async def _run(applications: int, concurrency: int, db_url: str) -> None:
         for retries, count in sorted(retry_hist.items(), key=lambda kv: kv[0]):
             print(f"  {retries} retries: {count} conflicts")
         print("")
-        print("✓ Done")
+        print("OK Done")
     finally:
         await pool.close()
 

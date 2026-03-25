@@ -1,29 +1,725 @@
 {
-  "application_id": "APEX-NARR05",
+  "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
   "examination_date": "2026-03-25",
-  "narrative": [
-    "Document -> Credit -> Fraud -> Compliance -> Decision executed.",
-    "Human override applied via MCP tool; package exported and verified."
-  ],
+  "integrity_verified_at_export": true,
+  "package_hash_chain": "859d7a6e83053c55cc6971b392b62512f9c3b039efacc876f9315755fe11f311",
   "projection_state": {},
+  "narrative": [],
   "models": [],
-  "package_hash_chain": "9896e0c915ac387a3451098f339ce0dc53fa2457caa68ef811a62f5d401fc91f",
   "events": [
     {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "type": "Test",
+      "id": "039325b0-85c2-4e33-b927-3dc91d080cd5",
+      "type": "AgentNodeExecuted",
       "payload": {
-        "k": "v"
+        "node_name": "validate_inputs",
+        "node_sequence": 0,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
       },
-      "recorded_at": "2026-03-24T00:00:00"
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
     },
     {
-      "id": "123e4567-e89b-12d3-a456-426614174001",
-      "type": "Test",
+      "id": "1ba409c7-47dd-4740-8d65-b88efdccfdab",
+      "type": "AgentNodeExecuted",
       "payload": {
-        "k": "v2"
+        "node_name": "assess_quality",
+        "node_sequence": 4,
+        "llm_tokens_input": 96,
+        "llm_tokens_output": 200,
+        "llm_cost_usd": 0.00696
       },
-      "recorded_at": "2026-03-24T00:00:01"
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "526e9578-9262-430d-80b5-7252a7efe447",
+      "type": "AgentSessionStarted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "agent_model": "gpt-4-vision",
+        "agent_version": "v1",
+        "session_config": {
+          "session_id": "ea732cb0-30f8-4d03-87df-7d13aeec1791",
+          "context_source": "fresh"
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "b15a88ea-e9f5-4709-838b-01f267026ff2",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "extract_income_statement",
+        "node_sequence": 2,
+        "llm_tokens_input": 2100,
+        "llm_tokens_output": 400,
+        "llm_cost_usd": 0.033
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "bac91628-0f04-4056-9d84-c5716f603706",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "extract_balance_sheet",
+        "node_sequence": 3,
+        "llm_tokens_input": 1800,
+        "llm_tokens_output": 350,
+        "llm_cost_usd": 0.0285
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "c7c6a469-8143-41d8-8adb-89b36265fc7f",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "validate_document_formats",
+        "node_sequence": 1,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "e9f02a68-e8b1-4913-9023-b7edb46c3e28",
+      "type": "ExtractionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "facts": {
+          "ebitda": 800000.0,
+          "net_income": 500000.0,
+          "gross_profit": 2000000.0,
+          "total_assets": 10000000.0,
+          "total_revenue": 5000000.0,
+          "total_liabilities": 6000000.0,
+          "shareholders_equity": 4000000.0
+        },
+        "field_confidence": {
+          "ebitda": 0.95,
+          "net_income": 0.95,
+          "gross_profit": 0.95,
+          "total_revenue": 0.95
+        },
+        "extraction_notes": []
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "f0f66be1-e021-4bed-9250-d243653f0aa3",
+      "type": "AgentSessionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "total_duration_ms": 1000,
+        "events_processed": 8
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "fd561138-21dc-4b58-bdce-10af793ef913",
+      "type": "QualityAssessmentCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "overall_confidence": 0.9,
+        "is_coherent": true,
+        "anomalies": [],
+        "critical_missing_fields": [],
+        "reextraction_recommended": false,
+        "auditor_notes": "Quality assessment completed"
+      },
+      "recorded_at": "2026-03-25T11:42:13.470868+00:00"
+    },
+    {
+      "id": "b505aebb-ff0d-4a86-bc70-bfb7977cb8e1",
+      "type": "CreditAnalysisRequested",
+      "payload": {
+        "requested_by": "document_processing_agent",
+        "priority": "normal"
+      },
+      "recorded_at": "2026-03-25T11:42:13.495722+00:00"
+    },
+    {
+      "id": "054db7b7-ab80-4cf3-99ae-4140dd5b2d25",
+      "type": "CreditAnalysisCompleted",
+      "payload": {
+        "credit_score": 720,
+        "debt_to_income_ratio": 0.3,
+        "model_version": "v1",
+        "analysis_duration_ms": 1200,
+        "decision": {
+          "outcome": "REFER",
+          "risk_tier": "LOW",
+          "confidence": 0.4,
+          "data_quality_caveats": []
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "22d4fae4-a860-4425-af96-94e6f646bc12",
+      "type": "AgentSessionStarted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "agent_model": "gpt-4-turbo",
+        "agent_version": "v1",
+        "session_config": {
+          "session_id": "3bca4767-2655-4fd7-8c80-1eaba6c576ac",
+          "context_source": "fresh"
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "55e5fae6-f365-4a42-980a-c0b5319f40d1",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "validate_inputs",
+        "node_sequence": 0,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "84929b9c-3b19-4b46-8239-158a671ff828",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "load_external_data",
+        "node_sequence": 2,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "8ccda6d1-b371-44c1-a1ce-50ac413f0d69",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "analyze_credit_risk",
+        "node_sequence": 3,
+        "llm_tokens_input": 57,
+        "llm_tokens_output": 200,
+        "llm_cost_usd": 0.00657
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "c6d03c53-711f-4f1b-b7ba-b3f80d2e2d39",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "open_aggregate_record",
+        "node_sequence": 1,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "d4cfee86-b396-4a14-907a-031aa1bdc9cc",
+      "type": "CreditRecordOpened",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "company_id": "0f42d263-fca5-e05e-5296-8487191986a7"
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "fc559b77-0d98-4120-88a7-bb8d56c0c9c1",
+      "type": "AgentSessionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "total_duration_ms": 1000,
+        "events_processed": 8
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "fdb1a65c-15e4-4bb0-a6e8-63b02879bf07",
+      "type": "AgentToolCalled",
+      "payload": {
+        "tool_name": "registry.get_company",
+        "tool_input_summary": "0f42d263-fca5-e05e-5296-8487191986a7",
+        "tool_output_summary": "Company data loaded"
+      },
+      "recorded_at": "2026-03-25T11:42:13.517498+00:00"
+    },
+    {
+      "id": "096c12e5-9a9e-4b24-9915-d6e1cb8352b9",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "analyze_fraud_patterns",
+        "node_sequence": 3,
+        "llm_tokens_input": 64,
+        "llm_tokens_output": 200,
+        "llm_cost_usd": 0.00664
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "2c94d0b3-7c6f-4f4d-9674-b09b7775af15",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "validate_inputs",
+        "node_sequence": 0,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "37e31d67-6a5d-4a38-a782-8bdcaae27a40",
+      "type": "FraudScreeningInitiated",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "company_id": "0f42d263-fca5-e05e-5296-8487191986a7"
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "3962f4c7-6ea7-4a2e-8eee-330be2e87be6",
+      "type": "AgentToolCalled",
+      "payload": {
+        "tool_name": "registry.get_financial_history",
+        "tool_input_summary": "0f42d263-fca5-e05e-5296-8487191986a7",
+        "tool_output_summary": "Loaded 3 years of history"
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "82ac48f6-15da-4739-8f3c-b9c199e110c2",
+      "type": "AgentSessionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "total_duration_ms": 1000,
+        "events_processed": 9
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "ad01f2ce-2f9b-4fbd-a4fc-f38ec13787f6",
+      "type": "FraudCheckCompleted",
+      "payload": {
+        "fraud_risk_score": 0.0,
+        "flags": [],
+        "passed": true
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "b8e91e9c-c905-4242-b83d-805fb99e91a1",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "cross_reference_registry",
+        "node_sequence": 2,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "db0b70bf-90d1-407b-adf6-da3c2659cbf4",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "load_facts",
+        "node_sequence": 1,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "fde861a5-4d9c-4d71-973e-ae425a62bb50",
+      "type": "AgentSessionStarted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "agent_model": "gpt-4-turbo",
+        "agent_version": "v1",
+        "session_config": {
+          "session_id": "09ae4f63-c348-4641-98bb-e80e2dcb0d25",
+          "context_source": "fresh"
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "ff4f49da-b767-44a8-af4d-01222a2d8ed2",
+      "type": "FraudScreeningCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "fraud_score": 0.0,
+        "anomalies": [],
+        "passed": true
+      },
+      "recorded_at": "2026-03-25T11:42:13.540611+00:00"
+    },
+    {
+      "id": "8eefb484-66b1-4bec-9a53-f45ad3ba3b55",
+      "type": "ComplianceCheckRequested",
+      "payload": {
+        "compliance_record_id": "993cec25-8ab4-4c59-a7c4-e936614e0b80"
+      },
+      "recorded_at": "2026-03-25T11:42:13.549169+00:00"
+    },
+    {
+      "id": "180a9f05-08af-4da0-868f-12af77acfc34",
+      "type": "AgentSessionStarted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "agent_model": "deterministic-python",
+        "agent_version": "v1",
+        "session_config": {
+          "session_id": "544c793e-9e0b-4bc5-80af-9139632fe477",
+          "context_source": "fresh"
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "1f3530a4-541f-4646-b556-70bc34d53c7c",
+      "type": "ComplianceCheckInitiated",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "company_id": "0f42d263-fca5-e05e-5296-8487191986a7"
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "20b89a9b-a24d-4d7d-89a8-1ae979c30d13",
+      "type": "ComplianceRulePassed",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-005",
+        "rule_name": "Minimum Operating History",
+        "is_hard_block": false
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "23e96659-ded9-4486-9349-54f756a0b0e1",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg002",
+        "node_sequence": 2,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "23f933d2-8d94-4cf4-9776-0d5e6544e683",
+      "type": "ComplianceRuleNoted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-006",
+        "rule_name": "CRA Community Reinvestment Act",
+        "note": "CRA_CONSIDERATION"
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "27be5dc8-1834-437f-af28-eba7c63b7abe",
+      "type": "ComplianceRulePassed",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-001",
+        "rule_name": "Bank Secrecy Act Check",
+        "is_hard_block": false
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "2fa2bdf6-b468-44fc-ba0e-82fefbeb55e0",
+      "type": "ComplianceRulePassed",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-004",
+        "rule_name": "Concentration Limit Check",
+        "is_hard_block": false
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "3226e3f2-aea7-4901-a448-f50cda42b859",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "validate_inputs",
+        "node_sequence": 0,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "3bd7437f-eb13-41bc-85cf-c02d52b3f984",
+      "type": "ComplianceCheckCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "overall_verdict": "PASS",
+        "checks_passed": 6
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "4f980665-f9d2-4f74-a73a-978d2073a297",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg004",
+        "node_sequence": 4,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "5272f9a7-22b6-4f87-a3d5-2963343ec1b2",
+      "type": "ComplianceRulePassed",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-002",
+        "rule_name": "OFAC Sanctions Check",
+        "is_hard_block": false
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "a8116e03-04c8-4016-b74c-3dc21b0108e7",
+      "type": "ComplianceRulePassed",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "rule_id": "REG-003",
+        "rule_name": "Jurisdiction Lending Eligibility",
+        "is_hard_block": false
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "a875a947-ce0c-43a8-b18a-fc8f1f512adf",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg001",
+        "node_sequence": 1,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "c90dc310-c01e-426a-a392-efd69dc45efe",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg005",
+        "node_sequence": 5,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "d3cdd5c3-e3c8-46e0-a05f-826eb2353748",
+      "type": "AgentSessionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "total_duration_ms": 1000,
+        "events_processed": 16
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "d63f1902-66a6-4bad-b076-8889f0c523c0",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg006",
+        "node_sequence": 6,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "f49e1cf1-8bbe-4f8b-9977-32a2ad2176c6",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "evaluate_reg003",
+        "node_sequence": 3,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.553086+00:00"
+    },
+    {
+      "id": "1c3ea0c0-eaf3-4d9e-a1de-e815f354ac7f",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "apply_hard_constraints",
+        "node_sequence": 5,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "24f4f183-0dda-4d71-b71f-f8d764e4d1f1",
+      "type": "DecisionGenerated",
+      "payload": {
+        "outcome": "DENY",
+        "confidence_score": 0.82,
+        "reasoning": "Credit: DECLINE, Fraud: 0.15, Compliance: PASS",
+        "model_version": "v1",
+        "agent_session_id": "e746752e-a5ed-48d4-b348-a1c9fa691d8e",
+        "recommendation": "DECLINE"
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "3d8b02aa-b056-45bf-9a99-aac1589f364c",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "synthesize_decision",
+        "node_sequence": 4,
+        "llm_tokens_input": 109,
+        "llm_tokens_output": 200,
+        "llm_cost_usd": 0.00709
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "5359155d-7fbb-4a6d-b3e6-ba91d246899d",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "load_fraud",
+        "node_sequence": 2,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "5b7cd11d-e563-45af-b271-cff18358cfbd",
+      "type": "AgentSessionStarted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "agent_model": "gpt-4-turbo",
+        "agent_version": "v1",
+        "session_config": {
+          "session_id": "e746752e-a5ed-48d4-b348-a1c9fa691d8e",
+          "context_source": "fresh"
+        }
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "76805710-4a75-4740-92b2-fcca20853a62",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "load_credit",
+        "node_sequence": 1,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "7ebdab49-e1e3-4d01-a094-b3de0f1f536e",
+      "type": "HumanReviewRequested",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "reason": "Agent recommended DECLINE \u2014 human review required",
+        "recommended_action": "DECLINE"
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "88ea9b1d-2416-4a7b-bf6d-225e3a5728e5",
+      "type": "ApplicationDenied",
+      "payload": {
+        "denial_reasons": [
+          "Decision orchestrator declined"
+        ],
+        "denied_by": "orchestrator"
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "ae78c734-e82f-4f85-ad0c-3197e3f20d04",
+      "type": "AgentSessionCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "total_duration_ms": 1000,
+        "events_processed": 10
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "c986216b-250b-4c7b-8541-a06eb67beec2",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "load_compliance",
+        "node_sequence": 3,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "efe3c8f5-a3cd-46b2-aab7-e0b1c5c5c593",
+      "type": "AgentNodeExecuted",
+      "payload": {
+        "node_name": "validate_inputs",
+        "node_sequence": 0,
+        "llm_tokens_input": 0,
+        "llm_tokens_output": 0,
+        "llm_cost_usd": 0.0
+      },
+      "recorded_at": "2026-03-25T11:42:13.568019+00:00"
+    },
+    {
+      "id": "59c4046d-d796-46d3-af90-9c6b6f1e1bb5",
+      "type": "HumanReviewCompleted",
+      "payload": {
+        "application_id": "a7be1185-c7ba-01cc-e6c8-9b28e5635aa7",
+        "reviewer_id": "LO-Sarah-Chen",
+        "final_decision": "APPROVE",
+        "override": true,
+        "override_reason": "15-year customer, prior repayment history, collateral offered",
+        "approved_amount_usd": 750000.0,
+        "conditions": [
+          "Monthly revenue reporting for 12 months",
+          "Personal guarantee from CEO"
+        ]
+      },
+      "recorded_at": "2026-03-25T11:42:14.389782+00:00"
+    },
+    {
+      "id": "bba63eea-3f6f-4a87-91c8-675d801dafbc",
+      "type": "ApplicationApproved",
+      "payload": {
+        "approved_amount": 750000.0,
+        "interest_rate": 5.0,
+        "approved_by": "LO-Sarah-Chen",
+        "conditions": [
+          "Monthly revenue reporting for 12 months",
+          "Personal guarantee from CEO"
+        ],
+        "approved_amount_usd": 750000.0
+      },
+      "recorded_at": "2026-03-25T11:42:14.389782+00:00"
     }
   ]
 }
