@@ -2,6 +2,7 @@
 ledger/agents/base_agent.py
 Gas Town, Node tracking, Tool Tracking, and OCC retry scaffolding for 5 agents.
 """
+import os
 import time
 from typing import Any, Dict, List, Callable, Coroutine, Optional
 from uuid import UUID, uuid4
@@ -13,6 +14,69 @@ from ledger.schema.events import (
 class SimulatedCrashError(Exception):
     """Exception raised when simulating agent crash for testing."""
     pass
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _llm_should_use_real() -> bool:
+    """
+    Real vs stub is controlled by environment (see `.env.example`).
+
+    - `LLM_MODE=stub|real` (preferred). When unset, falls back to `USE_REAL_LLM`.
+    """
+    mode = (os.getenv("LLM_MODE") or "").strip().lower()
+    if mode == "stub":
+        return False
+    if mode == "real":
+        return True
+    return _env_bool("USE_REAL_LLM", False)
+
+
+def _llm_openai_compatible_config(model_arg: Optional[str], agent_model: str) -> Dict[str, Any]:
+    """
+    Resolve OpenAI-compatible chat-completions settings from env.
+
+    Canonical keys (preferred):
+      LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TEMPERATURE
+
+    Backward-compatible fallbacks:
+      GROQ_* / OPENAI_* and per-call `model` / `agent_model`.
+    """
+    api_key = (
+        (os.getenv("LLM_API_KEY") or "").strip()
+        or (os.getenv("GROQ_API_KEY") or "").strip()
+        or (os.getenv("OPENAI_API_KEY") or "").strip()
+    )
+    base_url = (
+        (os.getenv("LLM_BASE_URL") or "").strip()
+        or (os.getenv("GROQ_BASE_URL") or "").strip()
+        or "https://api.groq.com/openai/v1/chat/completions"
+    )
+    llm_model = (
+        (os.getenv("LLM_MODEL") or "").strip()
+        or (os.getenv("GROQ_MODEL") or "").strip()
+        or (model_arg or agent_model or "").strip()
+    )
+    try:
+        temperature = float(os.getenv("LLM_TEMPERATURE", "0.0"))
+    except ValueError:
+        temperature = 0.0
+    timeout_s = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
+    provider = (os.getenv("LLM_PROVIDER") or "openai_compatible").strip().lower()
+    return {
+        "api_key": api_key,
+        "base_url": base_url,
+        "model": llm_model,
+        "temperature": temperature,
+        "timeout_s": timeout_s,
+        "provider": provider,
+    }
+
 
 class BaseApexAgent:
     def __init__(self, agent_model: str, agent_version: str, event_store=None):
@@ -100,30 +164,154 @@ class BaseApexAgent:
         return round(cost, 6)
     
     async def _call_llm(self, system_prompt: str, user_message: str, model: str = None) -> Any:
-        """Call LLM with token tracking. Stub implementation - replace with actual LLM client."""
-        # This is a stub - in production, integrate with OpenAI, Anthropic, etc.
-        # For now, return a mock response structure
-        model = model or self.agent_model
-        
-        # Simulate token counts
-        tokens_in = len(system_prompt.split()) + len(user_message.split())
-        tokens_out = 200  # Mock response size
-        
-        class MockResponse:
+        """
+        Call LLM with token tracking.
+
+        Configuration is read from the environment (see `.env.example`):
+
+        - `LLM_MODE=stub|real` — stub is default for deterministic tests; `real` calls an
+          OpenAI-compatible `POST .../chat/completions` endpoint.
+        - If `LLM_MODE` is unset, `USE_REAL_LLM=true` still enables real calls (legacy).
+
+        Real-call settings (canonical): `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`,
+        `LLM_TEMPERATURE`, `LLM_TIMEOUT_SECONDS`. Falls back to `GROQ_*` / `OPENAI_*`
+        when canonical keys are empty.
+        """
+        use_real = _llm_should_use_real()
+        if not use_real:
+            # Stub response for deterministic tests / offline runs.
+            tokens_in = len(system_prompt.split()) + len(user_message.split())
+            tokens_out = 200  # Mock response size
+
+            class MockUsage:
+                def __init__(self, input_tokens, output_tokens):
+                    self.input_tokens = input_tokens
+                    self.output_tokens = output_tokens
+
+            class MockResponse:
+                def __init__(self, content, usage):
+                    self.content = content
+                    self.usage = usage
+
+            return MockResponse(
+                content="{}",
+                usage=MockUsage(tokens_in, tokens_out),
+            )
+
+        cfg = _llm_openai_compatible_config(model, self.agent_model)
+        api_key = cfg["api_key"]
+        if not api_key:
+            raise RuntimeError(
+                "Real LLM enabled but no API key: set LLM_API_KEY "
+                "(or GROQ_API_KEY / OPENAI_API_KEY)."
+            )
+        llm_model = cfg["model"]
+        if not llm_model:
+            raise RuntimeError(
+                "Real LLM enabled but no model: set LLM_MODEL (or GROQ_MODEL), "
+                "or pass a non-empty `model` / agent_model."
+            )
+
+        base_url = cfg["base_url"]
+        timeout_s = cfg["timeout_s"]
+
+        # Local imports to avoid dependency/network usage during stub mode.
+        import httpx
+
+        payload = {
+            "model": llm_model,
+            "temperature": cfg["temperature"],
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+        }
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            langsmith_tracing = _env_bool("LANGSMITH_TRACING_V2", False)
+
+            if langsmith_tracing:
+                from langsmith import traceable
+
+                trace_name = os.getenv("LLM_LANGSMITH_RUN_NAME", "llm.chat_completions")
+
+                @traceable(
+                    run_type="llm",
+                    name=trace_name,
+                    project_name=os.getenv("LANGSMITH_PROJECT") or None,
+                    metadata={
+                        "agent_model": self.agent_model,
+                        "agent_version": self.agent_version,
+                        "llm_provider": cfg["provider"],
+                        "llm_model": llm_model,
+                        "llm_base_url": base_url,
+                    },
+                )
+                async def _openai_compatible_chat_completions() -> dict:
+                    async with httpx.AsyncClient(timeout=timeout_s) as client:
+                        resp = await client.post(base_url, headers=headers, json=payload)
+                        resp.raise_for_status()
+                        return resp.json()
+
+                data = await _openai_compatible_chat_completions()
+            else:
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(base_url, headers=headers, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+            # Normalize to the same response shape our agents expect.
+            content = ""
+            try:
+                content = data["choices"][0]["message"]["content"] or ""
+            except Exception:
+                content = data.get("content", "") or ""
+
+            usage = data.get("usage") or {}
+            input_tokens = usage.get("prompt_tokens") or usage.get("input_tokens") or 0
+            output_tokens = usage.get("completion_tokens") or usage.get("output_tokens") or 0
+        except Exception as e:
+            # Keep the pipeline resilient: if the external LLM endpoint fails,
+            # fall back to deterministic token estimates.
+            import logging
+            status = None
+            body_snippet = None
+            try:
+                # httpx raises HTTPStatusError with response attached for non-2xx.
+                status = getattr(getattr(e, "response", None), "status_code", None)
+                body = getattr(getattr(e, "response", None), "text", None)
+                if isinstance(body, str) and body:
+                    body_snippet = body[:500]
+            except Exception:
+                pass
+
+            msg_parts = [f"Real LLM call failed; falling back to stub: {e}"]
+            if status is not None:
+                msg_parts.append(f"(status={status})")
+            if body_snippet:
+                msg_parts.append(f"(body={body_snippet})")
+            logging.getLogger(__name__).warning(" ".join(msg_parts))
+            tokens_in = len(system_prompt.split()) + len(user_message.split())
+            input_tokens = tokens_in
+            output_tokens = 200
+            content = "{}"
+
+        class RealUsage:
+            def __init__(self, input_tokens, output_tokens):
+                self.input_tokens = int(input_tokens)
+                self.output_tokens = int(output_tokens)
+
+        class RealResponse:
             def __init__(self, content, usage):
                 self.content = content
                 self.usage = usage
-                
-        class MockUsage:
-            def __init__(self, input_tokens, output_tokens):
-                self.input_tokens = input_tokens
-                self.output_tokens = output_tokens
-        
-        # Return mock response - subclasses should override for real LLM integration
-        return MockResponse(
-            content='{}',
-            usage=MockUsage(tokens_in, tokens_out)
-        )
+
+        return RealResponse(content=content, usage=RealUsage(input_tokens, output_tokens))
         
     async def write_output(
         self, 
