@@ -11,6 +11,15 @@ Usage:
     python scripts/run_pipeline.py --app APEX-0021 --phase decision
     python scripts/run_pipeline.py --app APEX-NEW-01 --phase full
 """
+import warnings
+
+# See scripts/demo_narr05.py — LangChain pydantic.v1 shim warning on Python 3.14+.
+warnings.filterwarnings(
+    "ignore",
+    message=r"Core Pydantic V1 functionality isn't compatible with Python 3\.\d+ or greater\.",
+    category=UserWarning,
+)
+
 import asyncio
 import argparse
 import os
@@ -22,6 +31,12 @@ import hashlib
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from src.event_store import EventStore
 from ledger.registry.client import ApplicantRegistryClient

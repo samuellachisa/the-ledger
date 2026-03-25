@@ -12,6 +12,16 @@ What it does:
 
 from __future__ import annotations
 
+import warnings
+
+# LangChain still imports pydantic.v1 shims; on Python 3.14+ that emits a noisy
+# UserWarning before our code runs. Suppress only this known compatibility notice.
+warnings.filterwarnings(
+    "ignore",
+    message=r"Core Pydantic V1 functionality isn't compatible with Python 3\.\d+ or greater\.",
+    category=UserWarning,
+)
+
 import argparse
 import asyncio
 import hashlib
@@ -24,6 +34,13 @@ from typing import Any, Dict, List
 from uuid import UUID
 
 import asyncpg
+
+# Load local environment variables (DATABASE_URL, etc.)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Ensure the repository root is on sys.path so `import src.*` works when the
 # script is executed as `python scripts/demo_narr05.py`.
