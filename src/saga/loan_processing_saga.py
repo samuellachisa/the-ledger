@@ -210,10 +210,12 @@ class SagaManager:
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
 
     async def _process_batch(self) -> None:
-        events = await self._store.load_all(
-            after_position=self._last_position,
-            limit=500,
-        )
+        events = [
+            e async for e in self._store.load_all(
+                after_position=self._last_position,
+                limit=500,
+            )
+        ]
         if not events:
             return
 

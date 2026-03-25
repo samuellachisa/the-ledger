@@ -155,7 +155,7 @@ async def test_replay_dead_letter(db_pool, event_store, handler, dead_letter):
     from src.replay import ReplayEngine
 
     await _submit(handler)
-    events = await event_store.load_all(after_position=0)
+    events = [e async for e in event_store.load_all(after_position=0)]
     assert events
 
     # Write to dead letter
@@ -190,7 +190,7 @@ async def test_replay_range(db_pool, event_store, handler):
     from src.dead_letter import DeadLetterQueue
 
     await _submit_and_credit(handler)
-    all_events = await event_store.load_all(after_position=0)
+    all_events = [e async for e in event_store.load_all(after_position=0)]
     assert len(all_events) >= 3
 
     min_pos = all_events[0].global_position
@@ -215,7 +215,7 @@ async def test_replay_range_partial_failure(db_pool, event_store, handler):
     from src.dead_letter import DeadLetterQueue
 
     await _submit_and_credit(handler)
-    all_events = await event_store.load_all(after_position=0)
+    all_events = [e async for e in event_store.load_all(after_position=0)]
     min_pos = all_events[0].global_position
     max_pos = all_events[-1].global_position
 
@@ -253,7 +253,7 @@ async def test_correlation_chain_query(db_pool, event_store, handler):
 async def test_causation_chain_query(db_pool, event_store, handler):
     """load_causation_chain returns events caused by a root event."""
     await _submit(handler)
-    all_events = await event_store.load_all(after_position=0)
+    all_events = [e async for e in event_store.load_all(after_position=0)]
     root = all_events[0]
 
     # Even with no explicit causation links, the root event itself is returned

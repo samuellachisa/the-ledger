@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 from uuid import uuid4
 
+import asyncpg
 import pytest
 
 # All tests in this module require a live database connection.
@@ -49,6 +50,24 @@ async def _full_app(handler: CommandHandler):
 async def _load_app(event_store, app_id):
     events = await event_store.load_stream(LoanApplicationAggregate.aggregate_type, app_id)
     return LoanApplicationAggregate.load(app_id, events)
+
+
+@pytest.mark.asyncio
+async def test_events_table_rejects_update(db_pool, handler):
+    """Append-only: events row cannot be mutated via UPDATE (DB trigger)."""
+    app_id = await _full_app(handler)
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT event_id FROM events WHERE aggregate_id = $1 LIMIT 1",
+            app_id,
+        )
+    assert row is not None
+    with pytest.raises(asyncpg.PostgresError):
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE events SET payload = '{}'::jsonb WHERE event_id = $1",
+                row["event_id"],
+            )
 
 
 # ===========================================================================
@@ -143,7 +162,7 @@ async def test_load_stream_uses_snapshot(db_pool, event_store, handler, snapshot
 async def test_dead_letter_write_and_list(db_pool, dead_letter, event_store, handler):
     """Failed events are written to dead letter and listable."""
     app_id = await _full_app(handler)
-    events = await event_store.load_all(after_position=0)
+    events = [e async for e in event_store.load_all(after_position=0)]
     assert events
 
     fake_error = ValueError("projection exploded")
@@ -165,9 +184,9 @@ async def test_dead_letter_write_and_list(db_pool, dead_letter, event_store, han
 @pytest.mark.asyncio
 async def test_dead_letter_resolve(db_pool, dead_letter, event_store, handler):
     """Resolving a dead letter entry marks it resolved."""
-    events = await event_store.load_all(after_position=0)
+    events = [e async for e in event_store.load_all(after_position=0)]
     app_id = await _full_app(handler)
-    events = await event_store.load_all(after_position=0)
+    events = [e async for e in event_store.load_all(after_position=0)]
 
     await dead_letter.write(
         event=events[0], source="saga",
@@ -189,7 +208,7 @@ async def test_dead_letter_resolve(db_pool, dead_letter, event_store, handler):
 async def test_dead_letter_count(db_pool, dead_letter, event_store, handler):
     """count_unresolved groups by processor_name."""
     await _full_app(handler)
-    events = await event_store.load_all(after_position=0)
+    events = [e async for e in event_store.load_all(after_position=0)]
 
     for i in range(3):
         await dead_letter.write(

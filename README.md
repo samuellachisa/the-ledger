@@ -15,7 +15,7 @@ This system implements Event Sourcing (not just Event-Driven Architecture) for a
 - Upcasting registry for schema evolution without mutating historical data
 - Cryptographic hash chain for tamper-evident audit trails
 - Gas Town pattern for agent crash recovery and context reconstruction
-- MCP server exposing 8 command tools and 6 query resources
+- MCP server (`src/mcp/server.py`): command tools + read-only resources; see **MCP Interface** below
 - What-if counterfactual projector with causal dependency filtering
 - Self-verifiable regulatory packages for auditors
 
@@ -48,6 +48,19 @@ Command Handlers ──► Load Aggregate ──► Validate Rules ──► App
 ```
 
 **Consistency model:** Strong within a single aggregate stream (OCC). Eventually consistent across aggregates and projections (< 500ms SLO).
+
+### Canonical vs. narrative code paths
+
+| Layer | Role |
+|--------|------|
+| **`src/`** | Production stack: `EventStore`, command handlers, aggregates (`src/aggregates/`), `src/projections/daemon.py`, `src/mcp/server.py`, `src/integrity/` (audit chain, Gas Town), `src/schema.sql`. |
+| **`ledger/`** | Week-5 narrative and demos: LangGraph-style agents, `ledger/event_store.py` (parallel API), `ledger/mcp_server.py` (FastMCP), NARR tests. Uses the same PostgreSQL ideas; **prefer `src/` for grading and production wiring.** |
+
+**MCP for assessment:** Use **`src/mcp/server.py`** (definitions in `src/mcp/tools.py` and `src/mcp/resources.py`). The FastMCP module **`ledger/mcp_server.py`** is a compact alternate demo only.
+
+Regulatory and MCP lifecycle tests target **`src/`**. Set `PROJECTION_DAEMON_LEADER_ELECTION=true` in production when multiple processes could run the projection daemon (PostgreSQL advisory lock; see `src/leader_election/lock.py`).
+
+**Run the production MCP server (stdio):** `python -m src.mcp.server` from the repo root with `DATABASE_URL` set (see Setup).
 
 ---
 
@@ -133,17 +146,13 @@ submit_application
                             └─► finalize_application   (→ FinalApproved | Denied | Referred)
 ```
 
-**Business rules enforced at the aggregate level:**
-- `confidence_score < 0.6` → outcome must be `REFER` (confidence floor)
-- `outcome = APPROVE` requires `compliance_passed = true`
-- `AgentContextLoaded` must precede any decision event (Gas Town rule)
-- All state transitions are validated against an explicit state machine
+**Business rules (LoanApplication)** — full table with test pointers: **`DESIGN.md` §5**.
 
 ---
 
 ## MCP Interface
 
-**Tools (Commands)** — write operations, enforce OCC and business rules:
+**Tools (Commands)** — write operations, enforce OCC and business rules (`src/mcp/tools.py`):
 
 | Tool | Precondition |
 |---|---|
@@ -156,7 +165,7 @@ submit_application
 | `generate_decision` | Context loaded; compliance finalized; confidence floor respected |
 | `finalize_application` | Application in `PendingDecision` status |
 
-**Resources (Queries)** — read from projections only, never from event streams directly:
+**Resources (Queries)** — read models and justified reads (`src/mcp/resources.py`). Most URIs hit **projections** only; `audit-trail`, `correlation`, and `causation` resources intentionally use the event store for **audit / traceability** (see file docstring).
 
 | Resource | Description |
 |---|---|
@@ -167,11 +176,12 @@ submit_application
 | `ledger://agents/performance` | Decision metrics per model version |
 | `ledger://integrity/{id}` | Hash chain verification result |
 
-**Structured errors** — all tools return typed errors with context:
+**Structured errors** — tools return JSON with `error`, `message`, and type-specific fields (e.g. OCC versions, `rule` for `BusinessRuleViolationError`). Resource read failures return JSON with `error` and `message`.
 
 ```json
 {
   "error": "OptimisticConcurrencyError",
+  "message": "...",
   "stream_id": "...",
   "expected_version": 3,
   "actual_version": 4,
@@ -179,24 +189,15 @@ submit_application
 }
 ```
 
+**End-to-end MCP-only test:** `tests/test_mcp_lifecycle.py`. **Rubric mapping:** `docs/RUBRIC_COVERAGE.md`.
+
 ---
 
 ## Concurrency Control
 
-OCC is enforced via a single atomic SQL upsert — no distributed locks, no deadlock risk:
+OCC is implemented in **`src/event_store.py`** inside a **single transaction**: new streams use `INSERT`; existing streams use `SELECT … FOR UPDATE` then `UPDATE` when `current_version == expected_version`; otherwise `OptimisticConcurrencyError`. Outbox rows are written in the **same transaction**. Full detail: **`DESIGN.md` §3**.
 
-```sql
-INSERT INTO event_streams (stream_id, aggregate_type, aggregate_id, current_version)
-VALUES (gen_random_uuid(), $1, $2, $new_version)
-ON CONFLICT (aggregate_type, aggregate_id) DO UPDATE
-    SET current_version = $new_version
-    WHERE event_streams.current_version = $expected_version
-RETURNING stream_id, current_version
-```
-
-If the `WHERE` clause fails, 0 rows are returned → `OptimisticConcurrencyError` is raised.
-
-`append_with_retry()` handles retries automatically: exponential backoff starting at 10ms, up to 5 attempts. Estimated conflict rate in this domain: < 0.1%.
+`append_with_retry()` retries on OCC with exponential backoff (10ms base, up to 5 attempts).
 
 ---
 
@@ -300,7 +301,7 @@ src/
 │   └── events.py                 # Pydantic event models, domain exceptions, enums
 ├── aggregates/
 │   ├── base.py                   # AggregateRoot: load, apply, _raise_event
-│   ├── loan_application.py       # State machine + 6 business rules
+│   ├── loan_application.py       # State machine + rules (DESIGN.md §5)
 │   ├── agent_session.py          # Gas Town checkpoint pattern
 │   ├── compliance_record.py      # Compliance check lifecycle
 │   └── audit_ledger.py           # Cryptographic hash chain

@@ -17,9 +17,55 @@ from uuid import UUID
 
 from src.aggregates.agent_session import AgentSessionAggregate
 from src.event_store import EventStore
-from src.models.events import AgentSessionStatus
+from src.models.events import AgentSessionStatus, DomainEvent
 
 logger = logging.getLogger(__name__)
+
+# Token budget for condensed history (older events summarized, tail preserved verbatim in structure)
+_DEFAULT_SUMMARY_BUDGET = 8000
+
+
+def _memory_tail_and_summary(
+    events: list[DomainEvent],
+    *,
+    tail_n: int = 3,
+    budget: int = _DEFAULT_SUMMARY_BUDGET,
+) -> tuple[list[dict[str, object]], str]:
+    """
+    Token-efficient summary: older events collapsed to event_type chain; last ``tail_n``
+    kept as structured entries for LLM / recovery prompts.
+    """
+    if not events:
+        return [], ""
+
+    tail = events[-tail_n:]
+    head = events[:-tail_n] if len(events) > tail_n else []
+
+    tail_struct: list[dict[str, object]] = []
+    for e in tail:
+        entry: dict[str, object] = {
+            "event_type": e.event_type,
+            "schema_version": e.schema_version,
+        }
+        if e.event_type == "AgentSessionFailed":
+            entry["error_type"] = getattr(e, "error_type", None)
+        elif e.event_type == "AgentDecisionRecorded":
+            entry["outcome"] = str(getattr(e, "outcome", ""))
+        tail_struct.append(entry)
+
+    if not head:
+        summary = " | ".join(str(t["event_type"]) for t in tail_struct)
+        return tail_struct, summary[:budget]
+
+    chain = [e.event_type for e in head]
+    prefix = f"earlier({len(head)} events): " + ", ".join(chain[:80])
+    if len(chain) > 80:
+        prefix += ", …"
+    suffix = " || recent: " + " | ".join(str(t["event_type"]) for t in tail_struct)
+    summary = (prefix + suffix)[:budget]
+    if len(prefix + suffix) > budget:
+        summary = summary[: budget - 3] + "..."
+    return tail_struct, summary
 
 
 class AgentContextReconstructor:
@@ -46,6 +92,9 @@ class AgentContextReconstructor:
                 "can_make_decision": bool,
                 "resume_required": bool,
                 "crash_detected": bool,
+                "last_events": list[dict],  # last 3 events (structured)
+                "events_summary": str,  # token-efficient condensed history
+                "partial_decision_reconciliation": bool,  # crash / error with context loaded
             }
         """
         events = await self._store.load_stream(
@@ -63,6 +112,9 @@ class AgentContextReconstructor:
                 "can_make_decision": False,
                 "resume_required": False,
                 "crash_detected": False,
+                "last_events": [],
+                "events_summary": "",
+                "partial_decision_reconciliation": False,
                 "error": "Session not found",
             }
 
@@ -70,6 +122,10 @@ class AgentContextReconstructor:
 
         crash_detected = session.status == AgentSessionStatus.CRASHED
         resume_required = crash_detected and session.context_loaded
+        last_events, events_summary = _memory_tail_and_summary(events)
+        partial_decision_reconciliation = bool(crash_detected and session.context_loaded) or (
+            bool(events) and events[-1].event_type == "AgentSessionFailed"
+        )
 
         logger.info(
             "Reconstructed session %s: status=%s, context_loaded=%s, "
@@ -92,6 +148,9 @@ class AgentContextReconstructor:
             "resume_required": resume_required,
             "crash_detected": crash_detected,
             "application_id": session.application_id,
+            "last_events": last_events,
+            "events_summary": events_summary,
+            "partial_decision_reconciliation": partial_decision_reconciliation,
         }
 
     async def get_missing_context_sources(

@@ -18,7 +18,8 @@ Retry strategy (append_with_retry):
 
 Archive support:
 - load_stream() accepts from_version/to_version for range queries.
-- load_all() supports after_position for incremental reads (used by daemon + archiver).
+- load_all() is an async generator over global_position for incremental replay
+  (daemon + archiver); use ``[e async for e in store.load_all(...)]`` for a list.
 - Archived events remain in the events table; a separate archiver process can copy
   events with global_position < threshold to cold storage and mark them archived.
   The events table retains all rows — immutability is never violated.
@@ -27,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from typing import Any, Callable, Coroutine, Optional, TypeVar
 from uuid import UUID, uuid4
 
@@ -305,14 +307,8 @@ class EventStore:
                         metadata,
                     )
 
-                # Instrument inside the with block (before return)
                 get_metrics().increment("events_appended_total", value=len(events), labels={"aggregate_type": aggregate_type})
                 return new_version
-
-        # Instrument after transaction commits
-        m = get_metrics()
-        m.increment("events_appended_total", value=len(events), labels={"aggregate_type": aggregate_type})
-        return new_version
 
     async def maybe_snapshot(
         self,
@@ -371,7 +367,7 @@ class EventStore:
             else:
                 get_metrics().increment("snapshot_misses_total", labels={"aggregate_type": aggregate_type})
                 logger.debug(
-                    "Snapshot hit for %s/%s at version %d",
+                    "Snapshot miss for %s/%s — replay from stream position %d",
                     aggregate_type, aggregate_id, effective_from,
                 )
 
@@ -395,17 +391,21 @@ class EventStore:
 
         return [self._deserialize(StoredEvent(row)) for row in rows]
 
-    async def load_all(        self,
+    async def load_all(
+        self,
         after_position: int = 0,
         limit: int = 1000,
         aggregate_type: Optional[str] = None,
-    ) -> list[StoredEvent]:
+    ) -> AsyncIterator[StoredEvent]:
         """
-        Load events across all streams after a global position.
-        Used by ProjectionDaemon for polling.
+        Async generator of events after ``global_position`` (ascending).
 
-        Returns raw StoredEvent (not upcasted) — projections handle their own
-        schema concerns.
+        Used by ProjectionDaemon for polling. Yields ``StoredEvent`` rows
+        (not upcasted) — projections handle their own schema concerns.
+
+        ``limit`` caps how many rows are fetched in this poll (not a total cap
+        across future calls). Collect with:
+        ``events = [e async for e in store.load_all(...)]``.
         """
         async with self._read_pool.acquire() as conn:
             if aggregate_type:
@@ -429,7 +429,8 @@ class EventStore:
                     """,
                     after_position, limit
                 )
-        return [StoredEvent(row) for row in rows]
+        for row in rows:
+            yield StoredEvent(row)
 
     async def stream_version(self, aggregate_type: str, aggregate_id: UUID) -> int:
         """

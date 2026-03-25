@@ -6,13 +6,18 @@ Design:
 - Polls global_position after last checkpoint
 - Processes events in global order (ensures causal consistency)
 - Updates checkpoint atomically with projection state
-- Fault tolerant: bad events are logged and skipped after retry limit
+- Fault tolerant: retries with backoff; after max retries writes DLQ and raises
+  ``ProjectionPoisonedEventError`` (checkpoint not advanced)
 - Exposes get_lag() for SLO monitoring
+
+Operator note: permanent handler failure stalls that projection until fixed; see
+DESIGN.md section 2, "Projection handler failures (poisoned events)".
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from typing import Callable, Awaitable
 
@@ -20,6 +25,7 @@ import asyncpg
 
 from src.event_store import EventStore, StoredEvent
 from src.dead_letter.queue import DeadLetterQueue
+from src.leader_election.lock import LeaderElection
 from src.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
@@ -27,9 +33,25 @@ logger = logging.getLogger(__name__)
 # Type alias for projection handler
 ProjectionHandler = Callable[[asyncpg.Connection, StoredEvent], Awaitable[None]]
 
+
+class ProjectionPoisonedEventError(RuntimeError):
+    """
+    Raised when a projection handler fails after all retries.
+
+    The projection checkpoint is **not** advanced so the read model stays
+    consistent with the stream; fix the handler or data, then replay.
+    """
+
 POLL_INTERVAL_SECONDS = 0.1   # 100ms polling for < 500ms SLO
 MAX_RETRIES_PER_EVENT = 3
 BATCH_SIZE = 500
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    v = os.environ.get(name)
+    if v is None:
+        return default
+    return v.strip().lower() in ("1", "true", "yes", "on")
 
 
 class ProjectionDaemon:
@@ -42,9 +64,22 @@ class ProjectionDaemon:
         await daemon.start()
         # ... later ...
         await daemon.stop()
+
+    Leader election (optional): pass ``use_leader_election=True`` or set
+    ``PROJECTION_DAEMON_LEADER_ELECTION=true`` so only one replica processes
+    events (PostgreSQL advisory lock). Standby instances block in ``start()``
+    until they become leader.
     """
 
-    def __init__(self, pool: asyncpg.Pool, event_store: EventStore, dead_letter: DeadLetterQueue | None = None):
+    def __init__(
+        self,
+        pool: asyncpg.Pool,
+        event_store: EventStore,
+        dead_letter: DeadLetterQueue | None = None,
+        *,
+        leader_election: LeaderElection | None = None,
+        use_leader_election: bool | None = None,
+    ):
         self._pool = pool
         self._store = event_store
         self._dead_letter = dead_letter
@@ -54,6 +89,15 @@ class ProjectionDaemon:
         self._last_positions: dict[str, int] = {}
         self._latest_global_position: int = 0
         self._batch_done = asyncio.Event()
+        # Optional PostgreSQL advisory lock so only one daemon instance processes (multi-replica deploys).
+        if leader_election is not None:
+            self._leader_election = leader_election
+        elif use_leader_election is True or (
+            use_leader_election is None and _env_bool("PROJECTION_DAEMON_LEADER_ELECTION", default=False)
+        ):
+            self._leader_election = LeaderElection(pool, "ProjectionDaemon")
+        else:
+            self._leader_election = None
 
     def register(self, projection_name: str, handler: ProjectionHandler) -> None:
         """Register a projection handler."""
@@ -61,6 +105,13 @@ class ProjectionDaemon:
 
     async def start(self) -> None:
         """Start the daemon as a background task."""
+        if self._leader_election:
+            if not await self._leader_election.try_acquire():
+                logger.info(
+                    "ProjectionDaemon: another instance holds the leader lock; waiting to become leader..."
+                )
+                await self._leader_election.wait_for_leadership()
+            logger.info("ProjectionDaemon: acquired leader election lock")
         self._running = True
         self._batch_done.set()  # not in a batch yet
         await self._load_checkpoints()
@@ -85,6 +136,8 @@ class ProjectionDaemon:
                 await self._task
             except asyncio.CancelledError:
                 pass
+        if self._leader_election:
+            await self._leader_election.release()
         logger.info("ProjectionDaemon stopped")
 
     async def get_lag(self, projection_name: str) -> dict:
@@ -194,7 +247,7 @@ class ProjectionDaemon:
         try:
             min_position = min(self._last_positions.get(name, 0) for name in self._handlers)
 
-            events = await self._store.load_all(after_position=min_position, limit=BATCH_SIZE)
+            events = [e async for e in self._store.load_all(after_position=min_position, limit=BATCH_SIZE)]
             if not events:
                 return
 
@@ -265,11 +318,10 @@ class ProjectionDaemon:
                     await asyncio.sleep(0.05 * (2 ** attempt))  # exponential backoff
                 else:
                     logger.error(
-                        "Projection %s permanently skipping event %s after %d retries: %s",
+                        "Projection %s failed permanently on event %s after %d retries: %s",
                         projection_name, event.event_id, MAX_RETRIES_PER_EVENT, e,
                         exc_info=True
                     )
-                    # Write to dead letter queue before skipping
                     if self._dead_letter:
                         try:
                             await self._dead_letter.write(
@@ -281,15 +333,7 @@ class ProjectionDaemon:
                             )
                         except Exception as dlq_err:
                             logger.error("Failed to write dead letter: %s", dlq_err)
-                    # Skip this event — advance checkpoint to avoid blocking
-                    async with self._pool.acquire() as conn:
-                        await conn.execute(
-                            """
-                            UPDATE projection_checkpoints
-                            SET last_position = $1, updated_at = NOW()
-                            WHERE projection_name = $2
-                            """,
-                            event.global_position,
-                            projection_name,
-                        )
-                    self._last_positions[projection_name] = event.global_position
+                    raise ProjectionPoisonedEventError(
+                        f"{projection_name} failed on event {event.event_id} "
+                        f"(global_position={event.global_position}); checkpoint not advanced"
+                    ) from e

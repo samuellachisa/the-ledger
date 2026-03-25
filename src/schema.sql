@@ -486,3 +486,19 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_log_agent
 CREATE INDEX IF NOT EXISTS idx_auth_audit_log_failures
     ON auth_audit_log (event_type, occurred_at DESC)
     WHERE event_type = 'failed';
+
+-- =============================================================================
+-- Append-only enforcement on events (database-level immutability)
+-- =============================================================================
+CREATE OR REPLACE FUNCTION prevent_events_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'events table is append-only: UPDATE and DELETE are not allowed'
+    USING ERRCODE = 'integrity_constraint_violation';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS events_append_only ON events;
+CREATE TRIGGER events_append_only
+  BEFORE UPDATE OR DELETE ON events
+  FOR EACH ROW EXECUTE PROCEDURE prevent_events_mutation();

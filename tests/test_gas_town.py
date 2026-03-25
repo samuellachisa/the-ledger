@@ -128,6 +128,9 @@ async def test_reconstruct_returns_correct_checkpoint(event_store):
     assert context["context_sources"] == ["credit_bureau"]
     assert context["can_make_decision"] is True
     assert context["crash_detected"] is False
+    assert len(context["last_events"]) <= 3
+    assert "AgentContextLoaded" in context["events_summary"]
+    assert any(e.get("event_type") == "AgentContextLoaded" for e in context["last_events"])
 
 
 @pytest.mark.asyncio
@@ -168,6 +171,8 @@ async def test_session_not_found_returns_error(event_store):
 
     assert result["context_loaded"] is False
     assert "error" in result
+    assert result["last_events"] == []
+    assert result["events_summary"] == ""
 
 
 @pytest.mark.asyncio

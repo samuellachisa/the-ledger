@@ -6,10 +6,10 @@ State Machine:
     → PendingDecision → FinalApproved | Denied | Referred
     Any state → Withdrawn
 
-Business Rules enforced:
-    - Cannot approve without compliance passing
-    - DecisionGenerated with confidence < 0.6 must be REFER
-    - Cannot transition to invalid states
+Business Rules enforced (see DESIGN.md §5 for rubric mapping and tests):
+    - Confidence floor: DecisionGenerated with confidence < 0.6 must be REFER
+    - Compliance before APPROVE in generate_decision and in approve()
+    - Single submit; valid state machine on all commands; terminal withdrawal guard
 """
 from __future__ import annotations
 

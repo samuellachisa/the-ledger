@@ -1,8 +1,14 @@
 """
-MCP Resource handlers (query side).
+MCP Resource handlers (query side — CQRS reads).
 
-Reads from projections ONLY — never from event streams directly (except audit-trail,
-which is a justified exception for auditors).
+**Default:** Resources read **materialized projections** or operational tables (health,
+dead letters, metrics). That matches the CQRS pattern: commands append events; queries
+do not replay streams for normal dashboards.
+
+**Justified event-store reads (exceptions documented for LLM/auditors):**
+- ``ledger://applications/{id}/audit-trail`` — full ``LoanApplication`` stream for auditors.
+- ``ledger://events/correlation/{id}`` / ``ledger://events/causation/{id}`` — distributed
+  traceability (ordered chains), not a substitute for ``ApplicationSummary``.
 
 Imported and registered by server.py.
 """

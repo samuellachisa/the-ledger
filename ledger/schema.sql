@@ -82,6 +82,20 @@ CREATE INDEX IF NOT EXISTS idx_ledger_events_stream ON events (stream_id, stream
 CREATE INDEX IF NOT EXISTS idx_ledger_events_global ON events (global_position);
 CREATE INDEX IF NOT EXISTS idx_ledger_events_type ON events (event_type);
 
+-- Append-only: forbid UPDATE/DELETE on immutable event log
+CREATE OR REPLACE FUNCTION ledger_prevent_events_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'events table is append-only: UPDATE and DELETE are not allowed'
+    USING ERRCODE = 'integrity_constraint_violation';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS ledger_events_append_only ON events;
+CREATE TRIGGER ledger_events_append_only
+  BEFORE UPDATE OR DELETE ON events
+  FOR EACH ROW EXECUTE PROCEDURE ledger_prevent_events_mutation();
+
 CREATE TABLE IF NOT EXISTS outbox (
     id              SERIAL PRIMARY KEY,
     event_id        UUID NOT NULL,

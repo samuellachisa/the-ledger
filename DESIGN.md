@@ -37,6 +37,35 @@ Every column in the `events` table exists for a specific reason:
 | `correlation_id` | Saga/request tracing. Groups all events from a single top-level request (e.g., one loan processing run) for distributed tracing. |
 | `recorded_at` | Wall-clock time of persistence. Distinct from `occurred_at` (in metadata) which is the domain time. Used for temporal queries and SLO measurement. |
 
+**Append-only at the database:** The `events` table has a `BEFORE UPDATE OR DELETE` trigger (`prevent_events_mutation` in `src/schema.sql`) that rejects any mutation of stored rows, complementing application-level append-only usage.
+
+### Supporting tables (schema justification)
+
+Beyond the `events` log, `src/schema.sql` defines operational and read-model tables. Each exists for a stated purpose:
+
+| Table | Justification |
+|---|---|
+| `event_streams` | One row per aggregate instance: holds `stream_id`, OCC `current_version`, optional `archived_at` / `tenant_id`. Without it, stream metadata and version could not be separated from the event log. |
+| `projection_checkpoints` | Last processed `global_position` per projection name so the `ProjectionDaemon` can resume without replaying history after restarts. |
+| `outbox` | Transactional outbox: dual-written with `events` so downstream publishers relay reliably; status tracks pending/published/failed. |
+| `application_summary_projection` | CQRS read model: current loan dashboard state (one row per application). |
+| `agent_performance_projection` | CQRS read model: rolling analytics per `model_version`. |
+| `compliance_audit_projection` | CQRS read model: temporal compliance history (`record_id`, `as_of_timestamp`). |
+| `audit_ledger_projection` | Regulatory hash chain (`event_hash`, `chain_hash`, `sequence_number`) for tamper detection. |
+| `saga_instances` | Durable `LoanProcessingSaga` step state so orchestration can resume after crashes without duplicating commands. |
+| `saga_checkpoints` | Same polling pattern as projections: last `global_position` processed by the saga poller. |
+| `aggregate_snapshots` | Optional snapshot of aggregate JSON at a `stream_position` to shorten replay for long streams. |
+| `dead_letter_events` | Poisoned events that exhausted retries (projection or saga): operator inspection and manual resolution. |
+| `agent_tokens` | MCP agent auth: hashed bearer tokens, roles, expiry (no plaintext secrets). |
+| `rate_limit_buckets` | Token-bucket rows per `agent_id` + `action` for abuse prevention on tools. |
+| `schema_migration_runs` | Audit trail for upcaster dry-runs / validation (counts, errors per event type). |
+| `idempotency_keys` | Prevents duplicate command execution when clients retry with the same idempotency key. |
+| `erasure_requests` | GDPR-style erasure workflow: applicant-linked streams and application status. |
+| `integrity_alerts` | Records broken hash chains from `IntegrityMonitor` until acknowledged/resolved. |
+| `auth_audit_log` | Durable trail for token issue/verify/refresh/revoke/fail (auditability). |
+
+Indexes on these tables match access paths documented in `src/schema.sql` comments (e.g. pending outbox, correlation id on `events`, temporal compliance).
+
 ### Cross-Aggregate Communication
 
 Aggregates communicate ONLY via events. The command handler is the orchestrator:
@@ -62,6 +91,15 @@ Three projections serve different query patterns:
 
 **ComplianceAuditView**: Optimized for temporal queries. Stores a snapshot at each compliance event, enabling `get_state_at(timestamp)` without replaying the event stream. This is a "bi-temporal" pattern — we record both the event time and the query time.
 
+### CQRS read models — query semantics
+
+| Read model (projection table) | Serves | Temporal / “as-of” | Notes |
+|-------------------------------|--------|--------------------|-------|
+| **ApplicationSummary** (`application_summary_projection`) | Current loan status, amounts, dashboard list | **No** — one mutable row per `application_id` (latest state) | Primary MCP resource `ledger://applications/{id}` |
+| **AgentPerformanceLedger** (`agent_performance_projection`) | Analytics: counts and averages per `model_version` | **No** — rolling aggregates | Resource `ledger://agents/performance` |
+| **ComplianceAuditView** (`compliance_audit_projection`) | Compliance history for an application | **Yes** — multiple rows keyed by `(record_id, as_of_timestamp)` | Resource `ledger://applications/{id}/compliance`; supports point-in-time style queries |
+| **AuditLedger** (`audit_ledger_projection`) | Tamper-evident hash chain for regulators | **Ordered** by `sequence_number` (not wall-clock bi-temporal) | Integrity check via `ledger://integrity/{id}` |
+
 ### Snapshot Invalidation Logic
 
 Projections are rebuilt from position 0 when:
@@ -76,6 +114,16 @@ Rebuild procedure:
 
 The checkpoint is updated atomically with the projection state (same transaction), so a crash during rebuild leaves the projection in a consistent (partially rebuilt) state that will be completed on restart.
 
+### Projection handler failures (“poisoned” events)
+
+If a handler throws after **all retries** (`MAX_RETRIES_PER_EVENT` in `src/projections/daemon.py`):
+
+1. The error is logged at **ERROR** with projection name, `event_id`, and `global_position`.
+2. If a **dead letter queue** is wired (`DeadLetterQueue`), the event is stored in **`dead_letter_events`** with `source = 'projection'` and the projection’s name.
+3. The daemon raises **`ProjectionPoisonedEventError`**. The **`projection_checkpoints`** row for that projection is **not** updated past the failing event.
+
+**Operator behavior:** Forward progress on that projection **stops** until the cause is fixed (code bug, unexpected payload, etc.). The read model does **not** silently skip the event, so it cannot drift from the append-only log. After deploying a fix, **restart** the daemon; it will retry from the same checkpoint. Use DLQ rows to locate `event_id` / `global_position` for inspection or replay. If multiple projections are registered, another projection may have advanced further on the same event batch; the minimum checkpoint across handlers still drives the next poll—**handlers should be idempotent** when the same `global_position` is offered again after a partial failure.
+
 ### Distributed Daemon Analysis
 
 The current `ProjectionDaemon` is a single-process asyncio task. In a distributed deployment:
@@ -89,6 +137,8 @@ The current `ProjectionDaemon` is a single-process asyncio task. In a distribute
 
 For this system, option 1 (leader election) is recommended. The checkpoint table already provides the coordination primitive — a daemon that holds the advisory lock is the only one that updates checkpoints.
 
+**Implementation:** Set `PROJECTION_DAEMON_LEADER_ELECTION=true` (see `.env.example`). `src/projections/daemon.py` then calls `LeaderElection` in `src/leader_election/lock.py` at `start()` and releases at `stop()`. Standby instances block until they acquire the lock.
+
 **Lag SLO Analysis**: With 100ms polling interval and typical PostgreSQL write latency of 1-5ms, expected lag is 50-105ms (half poll interval + write latency). The 500ms SLO provides 5x headroom. Under load (1000 events/second), batch processing of 500 events per poll cycle keeps lag bounded.
 
 ---
@@ -97,20 +147,20 @@ For this system, option 1 (leader election) is recommended. The checkpoint table
 
 ### OCC Implementation
 
-The `append` method uses a single atomic SQL statement:
+The `append` method runs **one database transaction** that (1) updates stream metadata under OCC, (2) inserts all new `events` rows, and (3) inserts matching `outbox` rows. The implementation in `src/event_store.py` uses explicit branches so failures are unambiguous:
 
-```sql
-INSERT INTO event_streams (stream_id, aggregate_type, aggregate_id, current_version)
-VALUES (gen_random_uuid(), $1, $2, $new_version)
-ON CONFLICT (aggregate_type, aggregate_id) DO UPDATE
-    SET current_version = $new_version, updated_at = NOW()
-    WHERE event_streams.current_version = $expected_version
-RETURNING stream_id, current_version
-```
+**New stream (`expected_version == 0`):**
 
-If the `WHERE` clause fails (version mismatch), the `ON CONFLICT DO UPDATE` returns 0 rows. We detect this and raise `OptimisticConcurrencyError`.
+- `INSERT INTO event_streams (...)` with `current_version = new_version`.
+- If a row already exists for `(aggregate_type, aggregate_id)`, PostgreSQL raises `UniqueViolationError` → translate to `OptimisticConcurrencyError` (caller must re-read and retry with the actual version).
 
-This is a single round-trip to the database — no separate SELECT + UPDATE. The atomicity is guaranteed by PostgreSQL's row-level locking during the upsert.
+**Existing stream (`expected_version > 0`):**
+
+- `SELECT stream_id, current_version FROM event_streams WHERE aggregate_type = ? AND aggregate_id = ? FOR UPDATE` — serializes concurrent writers on the same aggregate.
+- If no row or `current_version != expected_version` → `OptimisticConcurrencyError`.
+- Otherwise `UPDATE event_streams SET current_version = new_version, ...` and proceed to insert `events` + `outbox`.
+
+An equivalent single-statement pattern is `INSERT ... ON CONFLICT DO UPDATE ... WHERE event_streams.current_version = expected_version`; we use `SELECT FOR UPDATE` + `UPDATE` for clearer conflict reporting and metrics. Atomicity is guaranteed by the surrounding transaction and row-level locking.
 
 ### Retry Strategy
 
@@ -163,7 +213,24 @@ The `UpcasterRegistry` applies the chain automatically until no more upcasters e
 
 ---
 
-## 5. EventStoreDB Comparison
+## 5. Domain Business Rules (LoanApplication aggregate)
+
+The rubric expects explicit business rules enforced **inside the domain model**, not only in HTTP/MCP adapters. `LoanApplicationAggregate` (`src/aggregates/loan_application.py`) enforces the following six rules. Each maps to a typed error (`BusinessRuleViolationError` or `InvalidStateTransitionError`) and automated tests.
+
+| # | Rule | Behavior | Primary tests |
+|---|------|----------|-----------------|
+| **1** | **Confidence floor** | `DecisionGenerated` with `confidence_score < 0.6` must use outcome `REFER`; otherwise `BusinessRuleViolationError` (`ConfidenceFloor`). | `tests/test_invariants.py` (`test_confidence_floor_invariant_under_concurrency`), `tests/test_mcp_lifecycle.py` |
+| **2** | **Compliance before APPROVE (decision)** | In `generate_decision`, outcome `APPROVE` requires `compliance_passed`; else `ComplianceDependency`. | `tests/test_invariants.py` (`test_compliance_dependency_invariant_under_concurrency`) |
+| **3** | **Compliance before `ApplicationApproved`** | `approve()` raises `ComplianceDependency` if compliance did not pass. | `tests/test_integration.py` (finalize/approve flows), aggregate unit behavior via command handler |
+| **4** | **Single submission** | `submit()` only when no prior state; duplicate create → `InvalidStateTransitionError`. | Command handler / integration tests |
+| **5** | **Terminal withdrawal guard** | `withdraw()` cannot leave terminal states (`FINAL_APPROVED`, `DENIED`, `WITHDRAWN`). | `tests/test_integration.py::test_cannot_withdraw_approved` |
+| **6** | **Explicit state machine** | Every command method checks allowed `LoanStatus` via `VALID_TRANSITIONS` / `_assert_status`. | `tests/test_invariants.py`, narrative and integration tests |
+
+Concurrency and causal consistency are handled separately: **OCC** on append (`expected_version`), **correlation/causation** IDs on events, and **model version** on decision events for traceability.
+
+---
+
+## 6. EventStoreDB Comparison
 
 ### PostgreSQL vs. EventStoreDB
 
@@ -199,7 +266,7 @@ PostgreSQL is preferable when:
 
 ---
 
-## 6. Reflection: What I Would Do Differently
+## 7. Reflection: What I Would Do Differently
 
 ### What the Implementation Got Wrong
 

@@ -171,8 +171,9 @@ async def read_resource(uri: str) -> ReadResourceResult:
         import json
         from mcp.types import TextResourceContents
         logger.exception("Error reading resource %s", uri)
+        payload = {"error": type(e).__name__, "message": str(e)}
         return ReadResourceResult(contents=[
-            TextResourceContents(type="text", text=json.dumps({"error": str(e)}), uri="ledger://error")
+            TextResourceContents(type="text", text=json.dumps(payload), uri="ledger://error")
         ])
 
 

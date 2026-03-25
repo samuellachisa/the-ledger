@@ -65,8 +65,8 @@ async def init_mcp_server(db_pool):
     # Wire up projection daemon for resource reads
     daemon = ProjectionDaemon(db_pool, store)
     daemon.register("ApplicationSummary", handle_application_summary)
-    daemon.register("ComplianceAudit", handle_compliance_audit)
-    daemon.register("AgentPerformance", handle_agent_performance)
+    daemon.register("ComplianceAuditView", handle_compliance_audit)
+    daemon.register("AgentPerformanceLedger", handle_agent_performance)
     mcp_server._projection_daemon = daemon
 
     yield
