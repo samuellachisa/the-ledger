@@ -45,3 +45,12 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Generated documents (regenerable from datagen)
+documents/
+data/
+
+# Temporary artifacts (regenerable)
+artifacts/*.txt
+artifacts/*.json
+!artifacts/.gitkeep

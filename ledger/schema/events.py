@@ -34,11 +34,15 @@ class DomainEvent(BaseModel):
     event_id: UUID = Field(default_factory=uuid4)
     event_type: str
     event_version: int = 1
+    schema_version: int = 1
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
+    occurred_at: datetime = Field(default_factory=datetime.utcnow)
+    correlation_id: Optional[UUID] = None
+    causation_id: Optional[UUID] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def to_payload(self) -> dict:
-        exclude = {"event_id", "event_type", "event_version", "recorded_at", "metadata"}
+        exclude = {"event_id", "event_type", "event_version", "schema_version", "recorded_at", "occurred_at", "correlation_id", "causation_id", "metadata"}
         return self.model_dump(exclude=exclude)
 
 class LoanStatus(str, Enum):
@@ -73,6 +77,7 @@ class CreditAnalysisCompleted(DomainEvent):
     debt_to_income_ratio: float
     model_version: Optional[str] = None
     analysis_duration_ms: Optional[int] = None
+    decision: Optional[dict[str, Any]] = None  # includes confidence, data_quality_caveats
 
 class FraudCheckCompleted(DomainEvent):
     event_type: str = "FraudCheckCompleted"
@@ -96,6 +101,7 @@ class DecisionGenerated(DomainEvent):
     reasoning: str
     model_version: str
     agent_session_id: UUID
+    recommendation: Optional[str] = None  # APPROVE, DECLINE, REFER — mirrors outcome for NARR-05
 
 class ApplicationApproved(DomainEvent):
     event_type: str = "ApplicationApproved"
@@ -103,6 +109,7 @@ class ApplicationApproved(DomainEvent):
     interest_rate: float
     approved_by: str
     conditions: list[str] = Field(default_factory=list)
+    approved_amount_usd: Optional[float] = None  # alias for approved_amount in NARR-05
 
 class ApplicationDenied(DomainEvent):
     event_type: str = "ApplicationDenied"
@@ -162,6 +169,8 @@ class AgentSessionFailed(DomainEvent):
     error_type: str
     error_message: str
     last_checkpoint: Optional[dict[str, int]] = None
+    recoverable: bool = True
+    last_successful_node: Optional[str] = None
 
 class AgentSessionResumed(DomainEvent):
     event_type: str = "AgentSessionResumed"
@@ -233,6 +242,106 @@ class AgentToolCalled(DomainEvent):
     tool_input_summary: str
     tool_output_summary: str
 
+# Additional events for narrative scenarios
+
+class ExtractionCompleted(DomainEvent):
+    event_type: str = "ExtractionCompleted"
+    application_id: UUID
+    facts: dict[str, Any] = Field(default_factory=dict)
+    field_confidence: dict[str, float] = Field(default_factory=dict)
+    extraction_notes: list[str] = Field(default_factory=list)
+
+
+class QualityAssessmentCompleted(DomainEvent):
+    event_type: str = "QualityAssessmentCompleted"
+    application_id: UUID
+    overall_confidence: float
+    is_coherent: bool
+    anomalies: list[str] = Field(default_factory=list)
+    critical_missing_fields: list[str] = Field(default_factory=list)
+    reextraction_recommended: bool = False
+    auditor_notes: str = ""
+
+class FraudScreeningInitiated(DomainEvent):
+    event_type: str = "FraudScreeningInitiated"
+    application_id: UUID
+    company_id: UUID
+
+class FraudScreeningCompleted(DomainEvent):
+    event_type: str = "FraudScreeningCompleted"
+    application_id: UUID
+    fraud_score: float
+    anomalies: list[dict[str, Any]] = Field(default_factory=list)
+    passed: bool = True
+
+class ComplianceCheckInitiated(DomainEvent):
+    event_type: str = "ComplianceCheckInitiated"
+    application_id: UUID
+    company_id: UUID
+
+class ComplianceRulePassed(DomainEvent):
+    event_type: str = "ComplianceRulePassed"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    is_hard_block: bool = False
+
+class ComplianceRuleFailed(DomainEvent):
+    event_type: str = "ComplianceRuleFailed"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    is_hard_block: bool = False
+    failure_reason: str = ""
+
+class ComplianceRuleNoted(DomainEvent):
+    event_type: str = "ComplianceRuleNoted"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    note: str = ""
+
+class ComplianceCheckCompleted(DomainEvent):
+    event_type: str = "ComplianceCheckCompleted"
+    application_id: UUID
+    overall_verdict: str
+    checks_passed: int
+
+class HumanReviewRequested(DomainEvent):
+    event_type: str = "HumanReviewRequested"
+    application_id: UUID
+    reason: str
+    recommended_action: str
+
+class HumanReviewCompleted(DomainEvent):
+    event_type: str = "HumanReviewCompleted"
+    application_id: UUID
+    reviewer_id: str
+    final_decision: str
+    override: bool = False
+    override_reason: str = ""
+    approved_amount_usd: Optional[float] = None
+    conditions: list[str] = Field(default_factory=list)
+
+class AgentSessionRecovered(DomainEvent):
+    event_type: str = "AgentSessionRecovered"
+    application_id: UUID
+    recovered_from_session_id: UUID
+    last_successful_node: str
+    skipped_nodes: list[str] = Field(default_factory=list)
+
+class CreditRecordOpened(DomainEvent):
+    event_type: str = "CreditRecordOpened"
+    application_id: UUID
+    company_id: UUID
+
+class ApplicationDeclined(DomainEvent):
+    event_type: str = "ApplicationDeclined"
+    application_id: UUID
+    decline_reasons: list[str] = Field(default_factory=list)
+    declined_by: str
+    adverse_action_notice_required: bool = False
+
 # 28-45. Generate 18 placeholder dummy classes
 _dummy_classes = []
 for i in range(28, 46):
@@ -250,6 +359,11 @@ EVENT_REGISTRY: dict[str, type[DomainEvent]] = {
         AgentCreditAnalysisObserved, AgentDecisionRecorded, AgentSessionCompleted, AgentSessionFailed,
         AgentSessionResumed, ComplianceRecordCreated, ComplianceCheckPassed, ComplianceCheckFailed,
         ComplianceRecordFinalized, AuditEntryRecorded, IntegrityCheckCompleted, PersonalDataErased,
-        AgentNodeExecuted, AgentToolCalled
+        AgentNodeExecuted, AgentToolCalled,
+        # New events for narrative scenarios
+        ExtractionCompleted, QualityAssessmentCompleted, FraudScreeningInitiated, FraudScreeningCompleted,
+        ComplianceCheckInitiated, ComplianceRulePassed, ComplianceRuleFailed, ComplianceRuleNoted,
+        ComplianceCheckCompleted, HumanReviewRequested, HumanReviewCompleted, AgentSessionRecovered,
+        CreditRecordOpened, ApplicationDeclined
     ] + _dummy_classes
 }

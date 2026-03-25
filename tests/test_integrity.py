@@ -16,7 +16,7 @@ from ledger.integrity.gas_town import reconstruct_agent_context
 
 @pytest_asyncio.fixture
 async def db_pool():
-    pool = await asyncpg.create_pool("postgresql://localhost/apex_ledger")
+    pool = await asyncpg.create_pool("postgresql://postgres:12345@localhost:5432/apex_ledger")
     async with pool.acquire() as conn:
         await conn.execute("DROP TABLE IF EXISTS events, event_streams, projection_checkpoints, outbox CASCADE;")
         await conn.execute("""
@@ -50,7 +50,13 @@ async def test_upcaster_does_not_write_to_events_table(store, db_pool):
     # Ensure raw database was not updated
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("SELECT payload, event_version FROM events WHERE stream_id = 'credit-1'")
-        raw_db_payload = dict(row["payload"])
+        raw_payload = row["payload"]
+        # asyncpg JSONB decoding can vary depending on type codecs.
+        if isinstance(raw_payload, str):
+            raw_payload = json.loads(raw_payload)
+        elif isinstance(raw_payload, list):
+            raw_payload = dict(raw_payload)
+        raw_db_payload = raw_payload
         assert "model_version" not in raw_db_payload
         assert row["event_version"] == 1
 

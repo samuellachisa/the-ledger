@@ -3,6 +3,7 @@ ledger/projections/compliance_audit.py
 ComplianceAuditView Projection
 """
 from typing import Dict, Any, List
+import copy
 from datetime import datetime
 from ledger.event_store import StoredEvent
 
@@ -35,7 +36,9 @@ class ComplianceAuditView:
         current_state = {}
         if self.records[app_id]:
             # Inherit previous state
-            current_state = dict(self.records[app_id][-1]["state"])
+            # Deep-copy so later appends to lists (e.g. passed_checks)
+            # don't mutate earlier historical snapshots used by time-travel queries.
+            current_state = copy.deepcopy(self.records[app_id][-1]["state"])
             
         t = event.event_type
         if t == "ComplianceRecordCreated":

@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # =============================================================================
@@ -213,6 +213,8 @@ class StreamMetadata(BaseModel):
 # =============================================================================
 
 class DomainEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
     event_id: UUID = Field(default_factory=uuid4)
     aggregate_id: UUID
     aggregate_type: str
@@ -268,6 +270,7 @@ class CreditAnalysisCompleted(DomainEvent):
     debt_to_income_ratio: float
     model_version: Optional[str] = None  # null for v1 events (upcasted)
     analysis_duration_ms: Optional[int] = None
+    decision: Optional[dict[str, Any]] = None  # includes confidence, data_quality_caveats
 
 
 class FraudCheckCompleted(DomainEvent):
@@ -300,6 +303,7 @@ class DecisionGenerated(DomainEvent):
     reasoning: str
     model_version: str
     agent_session_id: UUID
+    recommendation: Optional[str] = None  # APPROVE, DECLINE, REFER — mirrors outcome for NARR-05
 
 
 class ApplicationApproved(DomainEvent):
@@ -309,6 +313,7 @@ class ApplicationApproved(DomainEvent):
     interest_rate: float
     approved_by: str
     conditions: list[str] = Field(default_factory=list)
+    approved_amount_usd: Optional[float] = None  # alias for approved_amount in NARR-05
 
 
 class ApplicationDenied(DomainEvent):
@@ -398,6 +403,8 @@ class AgentSessionFailed(DomainEvent):
     error_type: str
     error_message: str
     last_checkpoint: Optional[dict[str, int]] = None  # Gas Town: resume point
+    recoverable: bool = True
+    last_successful_node: Optional[str] = None
 
 
 class AgentSessionResumed(DomainEvent):
@@ -487,6 +494,189 @@ class PersonalDataErased(DomainEvent):
 
 
 # =============================================================================
+# Gas Town Agent Tracking Events
+# =============================================================================
+
+class AgentNodeExecuted(DomainEvent):
+    """Tracks node execution with LLM token/cost metrics for Gas Town recovery."""
+    aggregate_type: str = "AgentSession"
+    event_type: str = "AgentNodeExecuted"
+    node_name: str
+    node_sequence: int
+    llm_tokens_input: int = 0
+    llm_tokens_output: int = 0
+    llm_cost_usd: float = 0.0
+
+
+class AgentToolCalled(DomainEvent):
+    """Tracks tool calls within agent sessions."""
+    aggregate_type: str = "AgentSession"
+    event_type: str = "AgentToolCalled"
+    tool_name: str
+    tool_input_summary: str = ""
+    tool_output_summary: str = ""
+
+
+# =============================================================================
+# Document Processing Events
+# =============================================================================
+
+class ExtractionCompleted(DomainEvent):
+    """Document extraction completed with extracted facts."""
+    aggregate_type: str = "DocumentPackage"
+    event_type: str = "ExtractionCompleted"
+    application_id: UUID
+    facts: dict[str, Any] = Field(default_factory=dict)
+    field_confidence: dict[str, float] = Field(default_factory=dict)
+    extraction_notes: list[str] = Field(default_factory=list)
+
+
+class QualityAssessmentCompleted(DomainEvent):
+    """Quality assessment of extracted documents."""
+    aggregate_type: str = "DocumentPackage"
+    event_type: str = "QualityAssessmentCompleted"
+    application_id: UUID
+    overall_confidence: float = 0.0
+    is_coherent: bool = True
+    anomalies: list[str] = Field(default_factory=list)
+    critical_missing_fields: list[str] = Field(default_factory=list)
+    reextraction_recommended: bool = False
+    auditor_notes: str = ""
+
+
+# =============================================================================
+# Credit Analysis Events
+# =============================================================================
+
+class CreditRecordOpened(DomainEvent):
+    """Credit analysis record opened for an application."""
+    aggregate_type: str = "CreditAnalysis"
+    event_type: str = "CreditRecordOpened"
+    application_id: UUID
+    company_id: UUID
+
+
+# =============================================================================
+# Fraud Detection Events
+# =============================================================================
+
+class FraudScreeningInitiated(DomainEvent):
+    """Fraud screening started for an application."""
+    aggregate_type: str = "FraudScreening"
+    event_type: str = "FraudScreeningInitiated"
+    application_id: UUID
+    company_id: UUID
+
+
+class FraudScreeningCompleted(DomainEvent):
+    """Fraud screening completed with score and anomalies."""
+    aggregate_type: str = "FraudScreening"
+    event_type: str = "FraudScreeningCompleted"
+    application_id: UUID
+    fraud_score: float = 0.0
+    anomalies: list[dict[str, Any]] = Field(default_factory=list)
+    passed: bool = True
+
+
+# =============================================================================
+# Compliance Events
+# =============================================================================
+
+class ComplianceCheckInitiated(DomainEvent):
+    """Compliance check started for an application."""
+    aggregate_type: str = "ComplianceCheck"
+    event_type: str = "ComplianceCheckInitiated"
+    application_id: UUID
+    company_id: UUID
+
+
+class ComplianceRulePassed(DomainEvent):
+    """Individual compliance rule passed."""
+    aggregate_type: str = "ComplianceCheck"
+    event_type: str = "ComplianceRulePassed"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    is_hard_block: bool = False
+
+
+class ComplianceRuleFailed(DomainEvent):
+    """Individual compliance rule failed."""
+    aggregate_type: str = "ComplianceCheck"
+    event_type: str = "ComplianceRuleFailed"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    is_hard_block: bool = False
+    failure_reason: str = ""
+
+
+class ComplianceRuleNoted(DomainEvent):
+    """Compliance rule noted (informational)."""
+    aggregate_type: str = "ComplianceCheck"
+    event_type: str = "ComplianceRuleNoted"
+    application_id: UUID
+    rule_id: str
+    rule_name: str
+    note: str = ""
+
+
+class ComplianceCheckCompleted(DomainEvent):
+    """Overall compliance check completed."""
+    aggregate_type: str = "ComplianceCheck"
+    event_type: str = "ComplianceCheckCompleted"
+    application_id: UUID
+    overall_verdict: str = ""  # "PASS", "BLOCKED", "REFER"
+    checks_passed: int = 0
+
+
+# =============================================================================
+# Human Review Events
+# =============================================================================
+
+class HumanReviewRequested(DomainEvent):
+    """Human review requested for an application."""
+    aggregate_type: str = "LoanApplication"
+    event_type: str = "HumanReviewRequested"
+    application_id: UUID
+    reason: str = ""
+    recommended_action: str = ""
+
+
+class HumanReviewCompleted(DomainEvent):
+    """Human review completed with decision."""
+    aggregate_type: str = "LoanApplication"
+    event_type: str = "HumanReviewCompleted"
+    application_id: UUID
+    reviewer_id: str
+    final_decision: str = ""  # "APPROVE", "DENY", "REFER"
+    override: bool = False
+    override_reason: str = ""
+    approved_amount_usd: Optional[float] = None
+    conditions: list[str] = Field(default_factory=list)
+
+
+class AgentSessionRecovered(DomainEvent):
+    """Agent session recovered after crash (Gas Town pattern)."""
+    aggregate_type: str = "AgentSession"
+    event_type: str = "AgentSessionRecovered"
+    application_id: UUID
+    recovered_from_session_id: UUID
+    last_successful_node: str
+    skipped_nodes: list[str] = Field(default_factory=list)
+
+
+class ApplicationDeclined(DomainEvent):
+    """Application declined with reasons (distinct from ApplicationDenied)."""
+    aggregate_type: str = "LoanApplication"
+    event_type: str = "ApplicationDeclined"
+    application_id: UUID
+    decline_reasons: list[str] = Field(default_factory=list)
+    declined_by: str = "system"
+    adverse_action_notice_required: bool = False
+
+
+# =============================================================================
 # Event Registry: maps event_type string → Pydantic class
 # =============================================================================
 
@@ -516,4 +706,21 @@ EVENT_REGISTRY: dict[str, type[DomainEvent]] = {
     "AuditEntryRecorded": AuditEntryRecorded,
     "IntegrityCheckCompleted": IntegrityCheckCompleted,
     "PersonalDataErased": PersonalDataErased,
+    # New events for narrative scenarios
+    "AgentNodeExecuted": AgentNodeExecuted,
+    "AgentToolCalled": AgentToolCalled,
+    "ExtractionCompleted": ExtractionCompleted,
+    "QualityAssessmentCompleted": QualityAssessmentCompleted,
+    "CreditRecordOpened": CreditRecordOpened,
+    "FraudScreeningInitiated": FraudScreeningInitiated,
+    "FraudScreeningCompleted": FraudScreeningCompleted,
+    "ComplianceCheckInitiated": ComplianceCheckInitiated,
+    "ComplianceRulePassed": ComplianceRulePassed,
+    "ComplianceRuleFailed": ComplianceRuleFailed,
+    "ComplianceRuleNoted": ComplianceRuleNoted,
+    "ComplianceCheckCompleted": ComplianceCheckCompleted,
+    "HumanReviewRequested": HumanReviewRequested,
+    "HumanReviewCompleted": HumanReviewCompleted,
+    "AgentSessionRecovered": AgentSessionRecovered,
+    "ApplicationDeclined": ApplicationDeclined,
 }

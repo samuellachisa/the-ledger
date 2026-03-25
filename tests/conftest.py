@@ -159,6 +159,30 @@ async def event_store(db_pool):
 
 
 @pytest_asyncio.fixture
+async def registry_client(db_pool):
+    if db_pool is None:
+        pytest.skip("Database not available")
+    from ledger.registry.client import ApplicantRegistryClient
+    return ApplicantRegistryClient(db_pool)
+
+
+@pytest_asyncio.fixture
+async def mcp_server(event_store):
+    """Minimal MCP server wrapper for narrative tests."""
+    import ledger.mcp_server as _mcp
+    _mcp.event_store = event_store
+    
+    class MCPServerWrapper:
+        async def call_tool(self, tool_name: str, args: dict):
+            tool_fn = getattr(_mcp, tool_name, None)
+            if tool_fn is None:
+                raise ValueError(f"Unknown MCP tool: {tool_name}")
+            return await tool_fn(**args)
+    
+    return MCPServerWrapper()
+
+
+@pytest_asyncio.fixture
 async def handler(event_store):
     from src.commands.handlers import CommandHandler
     return CommandHandler(event_store)

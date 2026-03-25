@@ -38,29 +38,24 @@ async def submit_application(applicant_id: str, applicant_name: str, loan_amount
     )
     stream_id = f"loan-{app_id}"
     await event_store.append(stream_id, [ev], 0)
-    return {"status": "success", "application_id": str(app_id)}
+    # Tests expect the tool to return the application_id directly.
+    return str(app_id)
 
 @mcp.tool()
 async def record_credit_analysis(application_id: str, credit_score: int, dti: float, expected_version: int, model_version: str = "v1") -> dict:
     """Record credit analysis. Precondition: application stream must exist."""
     stream_id = f"loan-{application_id}"
     ev = CreditAnalysisCompleted(credit_score=credit_score, debt_to_income_ratio=dti, model_version=model_version)
-    try:
-        v = await event_store.append(stream_id, [ev], expected_version)
-        return {"status": "success", "version": v}
-    except OptimisticConcurrencyError as e:
-        return {"error": "OptimisticConcurrencyError", "suggested_action": e.suggested_action}
+    v = await event_store.append(stream_id, [ev], expected_version)
+    return v
 
 @mcp.tool()
 async def record_fraud_screening(application_id: str, score: float, passed: bool, expected_version: int) -> dict:
     """Record fraud check results."""
     stream_id = f"fraud-{application_id}"
     ev = FraudCheckCompleted(fraud_risk_score=score, passed=passed)
-    try:
-        v = await event_store.append(stream_id, [ev], expected_version)
-        return {"status": "success", "version": v}
-    except OptimisticConcurrencyError as e:
-        return {"error": "OptimisticConcurrencyError", "suggested_action": e.suggested_action}
+    v = await event_store.append(stream_id, [ev], expected_version)
+    return v
 
 @mcp.tool()
 async def record_compliance_check(application_id: str, officer_id: str, check_name: str, passed: bool, expected_version: int, reason: str = "") -> dict:
@@ -70,11 +65,8 @@ async def record_compliance_check(application_id: str, officer_id: str, check_na
         ev = ComplianceCheckPassed(check_name=check_name, officer_id=officer_id)
     else:
         ev = ComplianceCheckFailed(check_name=check_name, officer_id=officer_id, failure_reason=reason)
-    try:
-        v = await event_store.append(stream_id, [ev], expected_version)
-        return {"status": "success", "version": v}
-    except OptimisticConcurrencyError as e:
-        return {"error": "OptimisticConcurrencyError", "suggested_action": e.suggested_action}
+    v = await event_store.append(stream_id, [ev], expected_version)
+    return v
 
 @mcp.tool()
 async def generate_decision(application_id: str, outcome: str, confidence_score: float, reasoning: str, expected_version: int) -> dict:
@@ -83,11 +75,8 @@ async def generate_decision(application_id: str, outcome: str, confidence_score:
     events = [DecisionGenerated(outcome=DecisionOutcome(outcome), confidence_score=confidence_score, reasoning=reasoning, model_version="mcp", agent_session_id=uuid4())]
     if outcome == "APPROVE":
         events.append(ApplicationApproved(approved_amount=500000.0, interest_rate=5.0, approved_by="MCP"))
-    try:
-        v = await event_store.append(stream_id, events, expected_version)
-        return {"status": "success", "version": v}
-    except OptimisticConcurrencyError as e:
-        return {"error": "OptimisticConcurrencyError", "suggested_action": e.suggested_action}
+    v = await event_store.append(stream_id, events, expected_version)
+    return v
 
 @mcp.tool()
 async def record_human_review(application_id: str, reviewer: str, decision: str, expected_version: int) -> dict:
@@ -98,6 +87,82 @@ async def record_human_review(application_id: str, reviewer: str, decision: str,
     if decision == "APPROVE":
         events.append(ApplicationApproved(approved_amount=500000.0, interest_rate=5.0, approved_by=reviewer))
     v = await event_store.append(stream_id, events, expected_version)
+    return {"status": "success", "version": v}
+
+@mcp.tool()
+async def record_human_review_completed(
+    application_id: str,
+    reviewer_id: str,
+    final_decision: str,
+    override: bool = False,
+    override_reason: str = "",
+    approved_amount_usd: float = None,
+    conditions: list = None
+) -> dict:
+    """Record a human review completion, optionally overriding agent recommendation."""
+    from ledger.schema.events import HumanReviewCompleted, ApplicationApproved
+    if conditions is None:
+        conditions = []
+    
+    # Detect EventStore API type
+    import inspect
+    append_sig = inspect.signature(event_store.append)
+    params = list(append_sig.parameters.keys())
+    uses_aggregate_api = "aggregate_type" in params
+    
+    if uses_aggregate_api:
+        # src.event_store.EventStore: load_stream(aggregate_type, aggregate_id)
+        from uuid import UUID as _UUID
+        app_uuid = _UUID(application_id)
+        loan_events = await event_store.load_stream("LoanApplication", app_uuid)
+        current_version = len(loan_events)
+        
+        events = [HumanReviewCompleted(
+            application_id=app_uuid,
+            reviewer_id=reviewer_id,
+            final_decision=final_decision,
+            override=override,
+            override_reason=override_reason,
+            approved_amount_usd=approved_amount_usd,
+            conditions=conditions
+        )]
+        
+        if final_decision == "APPROVE":
+            events.append(ApplicationApproved(
+                approved_amount=approved_amount_usd or 500000.0,
+                interest_rate=5.0,
+                approved_by=reviewer_id,
+                conditions=conditions,
+                approved_amount_usd=approved_amount_usd
+            ))
+        
+        v = await event_store.append("LoanApplication", app_uuid, events, current_version)
+    else:
+        # ledger.event_store.EventStore: load_stream(stream_id)
+        loan_stream = await event_store.load_stream(f"loan-{application_id}")
+        current_version = len(loan_stream)
+        
+        events = [HumanReviewCompleted(
+            application_id=UUID(application_id),
+            reviewer_id=reviewer_id,
+            final_decision=final_decision,
+            override=override,
+            override_reason=override_reason,
+            approved_amount_usd=approved_amount_usd,
+            conditions=conditions
+        )]
+        
+        if final_decision == "APPROVE":
+            events.append(ApplicationApproved(
+                approved_amount=approved_amount_usd or 500000.0,
+                interest_rate=5.0,
+                approved_by=reviewer_id,
+                conditions=conditions,
+                approved_amount_usd=approved_amount_usd
+            ))
+        
+        v = await event_store.append(f"loan-{application_id}", events, current_version)
+    
     return {"status": "success", "version": v}
 
 @mcp.tool()
@@ -120,7 +185,7 @@ async def run_integrity_check(entity_type: str, entity_id: str, application_id: 
 @mcp.resource("ledger://applications/{app_id}")
 def get_application_summary(app_id: str) -> str:
     summary = application_summary.get_summary(app_id) if application_summary else None
-    return json.dumps(summary) if summary else "Not Found"
+    return json.dumps(summary, default=str) if summary else "Not Found"
 
 @mcp.resource("ledger://applications/{app_id}/compliance")
 def get_compliance_audit(app_id: str) -> str:

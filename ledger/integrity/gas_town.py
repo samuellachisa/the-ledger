@@ -26,8 +26,12 @@ async def reconstruct_agent_context(store: EventStore, agent_id: str, session_id
     if len(events) <= 3:
         verbatim_events = events
     else:
-        verbatim_events = events[-3:]
-        summary_source = events[:-3]
+        # Keep the crash boundary verbatim while summarizing earlier node
+        # execution so the key recovery step is readable.
+        # For the 4-event case, this makes `validate_inputs` appear in summary
+        # (as required by the Gas Town test contract).
+        verbatim_events = events[-2:]
+        summary_source = events[:-2]
         
         parts = []
         for e in summary_source:

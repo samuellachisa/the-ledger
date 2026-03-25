@@ -7,7 +7,7 @@ import pytest_asyncio
 import asyncpg
 import asyncio
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 from ledger.event_store import EventStore
 from ledger.projections.daemon import ProjectionDaemon
 from ledger.projections.application_summary import ApplicationSummaryProjection
@@ -16,7 +16,7 @@ from ledger.schema.events import LoanApplicationSubmitted, ComplianceRecordCreat
 
 @pytest_asyncio.fixture
 async def db_pool():
-    pool = await asyncpg.create_pool("postgresql://localhost/apex_ledger")
+    pool = await asyncpg.create_pool("postgresql://postgres:12345@localhost:5432/apex_ledger")
     async with pool.acquire() as conn:
         await conn.execute("DROP TABLE IF EXISTS events, event_streams, projection_checkpoints, outbox CASCADE;")
         await conn.execute("""

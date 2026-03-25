@@ -37,3 +37,11 @@ class ApplicantRegistryClient:
                 "SELECT * FROM applicant_registry.loan_relationships WHERE company_id = $1", company_id
             )
             return [dict(r) for r in rows]
+
+    async def get_companies_by_jurisdiction(self, jurisdiction: str) -> List[Dict[str, Any]]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM applicant_registry.companies WHERE jurisdiction = $1 OR state = $1",
+                jurisdiction
+            )
+            return [dict(r) for r in rows]
