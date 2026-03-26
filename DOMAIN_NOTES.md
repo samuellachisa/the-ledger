@@ -1,6 +1,8 @@
 # DOMAIN NOTES — TRP1 Week 5: The Ledger
 ## Apex Financial Services — Agentic Event Store & Enterprise Audit Infrastructure
 
+These six questions are answered in **conceptual prose only** (no code or SQL), so assessors can judge domain understanding separately from implementation detail. Implementation evidence lives in **TECHNICAL_REPORT.md** and the codebase.
+
 ---
 
 ## Q1: Why Event Sourcing over a Traditional CRUD Database for an AI Agent Audit System?
@@ -19,15 +21,15 @@ A traditional CRUD database stores only the *current state* of a record. When an
 
 5. **Decoupling via Events** — Multiple downstream systems (compliance, reporting, risk) can subscribe to the same event stream without coupling to the loan processing core.
 
-**The tradeoff:** ES adds complexity — projections must be maintained, eventual consistency must be managed, and schema evolution requires upcasting rather than `ALTER TABLE`. For a financial AI platform where auditability is a regulatory requirement, this complexity is justified.
+**The tradeoff:** ES adds complexity — projections must be maintained, eventual consistency must be managed, and schema evolution favors read-time adaptation of old payloads instead of rewriting historical rows in place. For a financial AI platform where auditability is a regulatory requirement, this complexity is justified.
 
 ---
 
 ## Q2: What is the Difference Between an Event Stream and a Projection? When Should Each Be Used?
 
-**Event Stream:** The append-only, ordered log of domain events for a specific aggregate instance (e.g., all events for `LoanApplication-abc123`). It is the *source of truth*. It is never queried directly by end-users or agents for read operations — it is the raw material.
+**Event stream:** The append-only, ordered log of domain events for one aggregate instance (for example, everything that ever happened for a single loan application). It is the *source of truth*. Casual “what is on screen?” queries should not scan the whole stream every time — that is what projections are for.
 
-**Projection:** A read-optimized, derived view built by processing events. It is a *materialized query result*. Examples: `ApplicationSummary` (current status of all applications), `AgentPerformanceLedger` (metrics per model version).
+**Projection:** A read-optimized, derived view built by processing events. It is a *materialized query result*. Examples include a per-application summary row for dashboards and rolling agent-performance metrics by model version.
 
 **When to use each:**
 
@@ -40,9 +42,9 @@ A traditional CRUD database stores only the *current state* of a record. When an
 | Compliance: state at a specific past timestamp | | ✓ (ComplianceAuditView) |
 | Concurrency check before appending | ✓ (stream_version) | |
 
-**Critical Rule (enforced in this system):** MCP Resources (queries) MUST read from projections. Only Command Handlers and the audit trail endpoint read from event streams. This enforces CQRS and ensures query performance is not coupled to stream length.
+**Critical rule (enforced in this system):** MCP resources that answer “what is the current status?” read from projections. Command handling and strong audit reads use the event stream (or dedicated audit paths). That split is classic CQRS: writes append facts; reads use materialized views so dashboards stay fast as streams grow.
 
-**Projection Lag:** Projections are eventually consistent. The `ProjectionDaemon` polls for new events and updates projections asynchronously. The SLO for `ApplicationSummary` is < 500ms lag. This is acceptable for a loan processing system where decisions take seconds to minutes, but must be monitored.
+**Projection lag:** Projections are eventually consistent. A background process applies new events to read models on a short polling interval. The service-level objective for the main application summary read model is sub-second lag; human-scale loan decisions tolerate that window, but lag must be monitored because it defines how stale a dashboard can be relative to the log.
 
 ---
 
@@ -50,42 +52,32 @@ A traditional CRUD database stores only the *current state* of a record. When an
 
 **The Problem:** Two AI agents (e.g., a Credit Analyst agent and a Fraud Detection agent) may simultaneously attempt to append events to the same loan application stream. Without concurrency control, both could succeed, creating an inconsistent state (e.g., two conflicting decisions).
 
-**Optimistic Concurrency Control:** Each `append` call includes an `expected_version` — the version the caller believes the stream is currently at. The database atomically checks: "Is the current stream version equal to `expected_version`?" If yes, append and increment. If no, raise `OptimisticConcurrencyError`.
+**Optimistic Concurrency Control:** Each append carries an expected stream version — what the caller believes is current. The store applies the new events only if that expectation matches the persisted version; otherwise it signals a concurrency conflict so the caller reloads the stream, reapplies domain logic, and retries. The check and the write happen in one atomic database transaction (or equivalent locking strategy), so two writers cannot both succeed at the same stream position.
 
-```sql
--- Atomic check-and-insert in PostgreSQL
-UPDATE event_streams 
-SET current_version = current_version + 1
-WHERE stream_id = $1 AND current_version = $expected_version
-RETURNING current_version;
--- If 0 rows updated → OptimisticConcurrencyError
-```
-
-**Why Not Pessimistic Locking (`SELECT FOR UPDATE`)?**
+**Why Not Pessimistic Locking (long-held row or table locks)?**
 
 1. **Deadlock Risk** — Multiple agents holding locks on different streams can deadlock. OCC has no locks, so no deadlocks.
 2. **Scalability** — Locks serialize all writes to a stream. OCC allows concurrent attempts; only one wins, others retry. Under low contention (typical for loan processing where each application has one active agent), OCC has near-zero overhead.
 3. **Distributed Systems** — Pessimistic locks don't compose across microservices or network partitions. OCC works with any database that supports atomic compare-and-swap.
 4. **Failure Modes** — A crashed agent holding a pessimistic lock blocks all other agents until timeout. A crashed agent with OCC has no impact on others.
 
-**Retry Strategy:** On `OptimisticConcurrencyError`, the agent should: reload the stream, re-apply business logic with the new state, and retry. The MCP tool returns a structured error with `suggested_action: "reload_and_retry"`. Estimated conflict rate in this domain: < 0.1% (loan applications are processed by one primary agent at a time; conflicts occur only during edge cases like timeout retries).
+**Retry Strategy:** On a concurrency conflict, the agent reloads the stream, reapplies business rules against the new state, and retries the append. Integration surfaces return a structured error that includes a machine-readable suggested action (for example, reload and retry) so automated agents can decide without parsing stack traces. In this domain, contention per application is low because a single primary agent usually owns a case; conflicts show up mainly on retries or rare overlapping commands, so conflict rates stay well below one percent in practice.
 
 ---
 
 ## Q4: What is Upcasting and Why is it Preferable to Migrating Historical Events?
 
-**The Problem:** Event schemas evolve. Version 1 of `CreditAnalysisCompleted` had no `model_version` field. Version 2 adds it. We have 10,000 historical events in the database without this field.
+**The problem:** Event schemas evolve. An early version of a credit-analysis event might omit a field that a later version requires (such as which model version scored the applicant). Thousands of rows may already exist in the older shape.
 
-**Option A — Migrate Historical Events (DO NOT DO THIS):**
-Run an `UPDATE` on the `events` table to add `model_version: null` to all old events. This violates immutability — the event store is no longer a faithful record of what actually happened. It also creates audit risk: "Was this field always null, or was it added later?"
+**Option A — Migrate historical events (do not do this):** Bulk-update stored payloads in place so every row contains the new keys. That breaks immutability: the log no longer records exactly what was persisted at the time of the business fact, and auditors cannot tell whether a value was observed historically or invented during a migration.
 
-**Option B — Upcasting (CORRECT APPROACH):**
-Leave historical events untouched in the database. When loading events at read time, pass them through an `UpcasterRegistry`. The upcaster detects `event_type = "CreditAnalysisCompleted"` and `schema_version = 1`, and transforms the payload to version 2 by adding `model_version: null`.
+**Option B — Upcasting (correct approach):**
+Leave historical events untouched on disk. When loading events at read time, pass them through a version-aware registry that maps each stored schema version to the current contract. For example, an older credit-analysis event without a model-version field is presented to the domain as a newer-shaped event with that field empty, without rewriting rows in storage.
 
-**Key Properties of Upcasting:**
-- **Raw DB payload is NEVER modified.** `SELECT payload FROM events` always returns the original data.
-- **Transformation is applied in memory at read time.** The aggregate sees a consistent v2 schema regardless of when the event was written.
-- **Null vs. Inference:** For missing historical fields, use `null` (not inferred values) unless the value can be deterministically derived from other fields in the same event. Fabricating historical data (e.g., guessing `model_version = "gpt-3.5"`) is a compliance violation. `null` honestly represents "this information was not recorded at the time."
+**Key properties of upcasting:**
+- **Persisted payloads stay as written.** What you stored years ago is still what you query literally; transformation is not a silent database edit.
+- **Transformation happens in memory on the read path.** The domain always sees the current contract regardless of when the event was written.
+- **Null versus inference:** For missing historical fields, use an honest absence (null) unless the value can be deterministically derived from other fields in the same event. Guessing a model name or score that was never recorded is a compliance risk; null means “not recorded then.”
 
 **Upcaster Chain:** If an event goes from v1 → v2 → v3, the registry applies upcasters in sequence. Each upcaster handles exactly one version transition.
 
@@ -99,19 +91,19 @@ Leave historical events untouched in the database. When loading events at read t
 - Re-process all events from the beginning (expensive, potentially causing duplicate side effects)
 - Lose all context and start fresh (incorrect, may miss critical information)
 
-**The Solution — `reconstruct_agent_context`:**
+**The solution — context reconstruction:**
 
-1. **Session Events as Checkpoints:** Every significant context-loading step is recorded as an event in the `AgentSession` stream (e.g., `AgentContextLoaded`, `CreditDataFetched`, `FraudCheckCompleted`).
+1. **Session events as checkpoints:** Every significant context-loading step is recorded as an event on the agent-session stream (for example, context loaded, credit data fetched, fraud check completed).
 
-2. **On Crash Recovery:** The agent loads its `AgentSession` stream. It replays session events to determine: "What context had I already loaded? What was my last known position in each source stream?"
+2. **On crash recovery:** The agent reloads its session stream and replays those events to learn what context was already bound and how far it had read each upstream stream.
 
-3. **Resume from Checkpoint:** The agent resumes from the last recorded checkpoint, not from the beginning. It only re-fetches context that was not yet recorded as loaded.
+3. **Resume from checkpoint:** Work continues from the last checkpoint, not from the beginning of time. The agent only fetches context that was not yet recorded as loaded.
 
-4. **Idempotency:** Context-loading operations must be idempotent. If `CreditDataFetched` is already in the session stream, the agent skips the credit fetch and uses the recorded data.
+4. **Idempotency:** Loading steps must be safe to repeat: if the session already shows that credit data was fetched, the agent does not refetch blindly.
 
-**Business Rule Enforcement:** The `AgentSession` aggregate enforces that `AgentContextLoaded` must be present before any decision event (`DecisionGenerated`) can be appended. This prevents a crashed-and-partially-recovered agent from making decisions without full context.
+**Business rule enforcement:** The session aggregate requires that “context loaded” was recorded before a decision can be appended. That blocks a partially recovered agent from approving without the same evidence chain a healthy run would have had.
 
-**Simulated Crash Test:** `test_gas_town.py` simulates a crash by raising an exception mid-processing, then reconstructing the agent session and verifying the agent resumes correctly with all previously loaded context intact.
+**Simulated crash recovery:** Automated tests interrupt processing mid-stream, then reconstruct the agent session from its own events and confirm that previously recorded checkpoints still hold and that the agent does not repeat work or skip required context before a decision.
 
 ---
 
@@ -119,11 +111,11 @@ Leave historical events untouched in the database. When loading events at read t
 
 **Guarantees:**
 
-1. **Within an Aggregate Stream:** Strong consistency. OCC ensures no two conflicting events are appended. The event stream for a single `LoanApplication` is always causally ordered and conflict-free.
+1. **Within one aggregate stream:** Strong consistency. Optimistic concurrency ensures no two conflicting appends both win. The stream for a single loan application stays totally ordered and free of contradictory facts at the same positions.
 
-2. **Across Aggregates:** Eventual consistency. A `LoanApplicationAggregate` and a `ComplianceRecordAggregate` communicate only via events. There is a window where one aggregate has processed an event that the other has not yet seen.
+2. **Across aggregates:** Eventual consistency. Loan and compliance lifecycles interact only through events and orchestration. There is always a possible window where one side has moved forward and another read model has not yet caught up.
 
-3. **Projections:** Eventually consistent with the event store. The `ProjectionDaemon` introduces lag (SLO: < 500ms for `ApplicationSummary`).
+3. **Projections:** Eventually consistent with the event store. The projection worker introduces bounded lag (target under half a second for the primary summary read model in normal conditions).
 
 4. **Outbox → External Systems:** At-least-once delivery. The outbox table records events that need to be published to external systems. A separate relay process reads the outbox and publishes. If the relay crashes after publishing but before marking as sent, the event is re-published. Consumers must be idempotent.
 
@@ -131,11 +123,11 @@ Leave historical events untouched in the database. When loading events at read t
 
 | Failure | Impact | Mitigation |
 |---|---|---|
-| `ProjectionDaemon` crash | Projections become stale | Daemon auto-restarts; checkpoint ensures no events are skipped on restart |
-| OCC conflict storm (many agents retrying) | Throughput degradation | Exponential backoff with jitter; MCP returns `suggested_action` |
-| Upcaster bug | Aggregate loads incorrect state | Upcasters are pure functions, unit-tested; raw DB data is unchanged so rollback is possible |
-| Hash chain break in AuditLedger | Integrity violation detected | `run_integrity_check` identifies the exact event where chain breaks; alerts compliance team |
+| Projection worker crash | Projections become stale | Process restarts; checkpoints ensure no duplicate skips on recovery |
+| OCC conflict storm (many agents retrying) | Throughput degradation | Exponential backoff with jitter; APIs return structured hints so clients reload and retry |
+| Upcaster bug | Aggregate loads incorrect state | Upcasters are pure, testable functions; raw stored payloads are unchanged so software rollback fixes reads |
+| Hash chain break in audit ledger | Integrity violation detected | Integrity pass identifies the break position; operators investigate before trusting the chain |
 | Projection checkpoint corruption | Projection rebuilt from wrong position | Checkpoints are stored in DB with version; full rebuild from position 0 is always possible |
 | Bad event in stream (malformed payload) | Daemon crash loop | Daemon catches exceptions per event, logs and skips after retry limit, continues processing |
 
-**Cryptographic Integrity:** The `AuditLedger` aggregate maintains a hash chain: each event's hash includes the hash of the previous event. This makes tampering detectable — modifying any historical event breaks all subsequent hashes. This is not a substitute for database-level access controls, but provides a cryptographic audit trail that can be independently verified.
+**Cryptographic integrity:** The audit ledger aggregate maintains a hash chain: each entry’s digest binds the previous digest. Altering any past entry breaks the chain forward. That does not replace database permissions, but it gives regulators an independently verifiable tamper check.

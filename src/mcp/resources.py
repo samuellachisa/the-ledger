@@ -9,6 +9,8 @@ do not replay streams for normal dashboards.
 - ``ledger://applications/{id}/audit-trail`` — full ``LoanApplication`` stream for auditors.
 - ``ledger://events/correlation/{id}`` / ``ledger://events/causation/{id}`` — distributed
   traceability (ordered chains), not a substitute for ``ApplicationSummary``.
+- ``ledger://applications/{id}/compliance?as_of=ISO-8601`` — point-in-time compliance snapshot
+  (``get_state_at`` on ``compliance_audit_projection``); omit the query for full history.
 
 Imported and registered by server.py.
 """
@@ -17,6 +19,8 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime
+from urllib.parse import unquote
 from uuid import UUID
 
 import asyncpg
@@ -27,7 +31,7 @@ from src.integrity.audit_chain import run_integrity_check
 from src.observability.metrics import get_metrics
 from src.projections.agent_performance import list_agent_performance
 from src.projections.application_summary import get_application_summary, list_applications
-from src.projections.compliance_audit import get_compliance_history
+from src.projections.compliance_audit import get_compliance_history, get_state_at
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +42,11 @@ def get_resource_definitions() -> list[Resource]:
         Resource(uri="ledger://applications", name="All Applications", mimeType="application/json"),
         Resource(uri="ledger://applications/{id}", name="Application Summary", mimeType="application/json"),
         Resource(uri="ledger://applications/{id}/audit-trail", name="Audit Trail", mimeType="application/json"),
-        Resource(uri="ledger://applications/{id}/compliance", name="Compliance History", mimeType="application/json"),
+        Resource(
+            uri="ledger://applications/{id}/compliance",
+            name="Compliance History (optional ?as_of=ISO-8601 for point-in-time state)",
+            mimeType="application/json",
+        ),
         Resource(uri="ledger://agents/performance", name="Agent Performance", mimeType="application/json"),
         Resource(uri="ledger://integrity/{id}", name="Integrity Check", mimeType="application/json"),
         Resource(uri="ledger://integrity/alerts", name="Open Integrity Alerts", mimeType="application/json"),
@@ -135,8 +143,32 @@ async def dispatch_resource(
                 for e in events
             ])
 
-        elif uri.endswith("/compliance"):
-            app_id = UUID(uri.split("/")[-2])
+        elif uri.partition("?")[0].endswith("/compliance"):
+            base_uri, _, query_str = uri.partition("?")
+            app_id = UUID(base_uri.split("/")[-2])
+            as_of_raw: str | None = None
+            if query_str:
+                for part in query_str.split("&"):
+                    if not part or "=" not in part:
+                        continue
+                    k, v = part.split("=", 1)
+                    if k == "as_of":
+                        as_of_raw = unquote(v)
+                        break
+            if as_of_raw is not None:
+                try:
+                    ts = datetime.fromisoformat(as_of_raw.replace("Z", "+00:00"))
+                except ValueError:
+                    return _json({
+                        "error": "InvalidArgument",
+                        "message": f"Invalid as_of datetime (use ISO-8601): {as_of_raw!r}",
+                    })
+                state = await get_state_at(conn, app_id, ts)
+                return _json({
+                    "application_id": str(app_id),
+                    "as_of": as_of_raw,
+                    "compliance_state": state,
+                })
             return _json(await get_compliance_history(conn, app_id))
 
         elif uri == "ledger://agents/performance":

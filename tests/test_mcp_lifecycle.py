@@ -25,6 +25,7 @@ Resources exercised via read_resource():
 from __future__ import annotations
 
 import json
+from urllib.parse import quote
 from uuid import uuid4
 
 import pytest
@@ -216,7 +217,24 @@ async def test_full_lifecycle_via_call_tool_and_read_resource(db_pool):
     await flush_projections()
     res = await mcp_server.read_resource(f"ledger://applications/{app_id}/compliance")
     compliance_history = _parse_resource(res)
-    assert isinstance(compliance_history, (list, dict))
+    assert isinstance(compliance_history, list)
+    assert len(compliance_history) >= 1
+    first_row = compliance_history[0]
+    ts = first_row["as_of_timestamp"]
+    if hasattr(ts, "isoformat"):
+        ts = ts.isoformat()
+    res_asof = await mcp_server.read_resource(
+        f"ledger://applications/{app_id}/compliance?as_of={quote(str(ts), safe='')}"
+    )
+    asof_payload = _parse_resource(res_asof)
+    assert asof_payload.get("application_id") == app_id
+    assert asof_payload.get("compliance_state") is not None
+    assert asof_payload["compliance_state"]["record_id"] == first_row["record_id"]
+
+    res_bad = await mcp_server.read_resource(
+        f"ledger://applications/{app_id}/compliance?as_of=not-a-date"
+    )
+    assert _parse_resource(res_bad).get("error") == "InvalidArgument"
 
     # ── 8. generate_decision ─────────────────────────────────────────────────
     r = await mcp_server.call_tool("generate_decision", {

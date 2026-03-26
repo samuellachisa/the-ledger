@@ -3,6 +3,50 @@
 
 ---
 
+## 0. Architectural tradeoffs (explicit pros and cons)
+
+This section summarizes the main design tensions called out in review: **upcasting**, **relational schema**, **concurrency**, and **integration with external systems**. Later sections go deeper; here the goal is a clear tradeoff table.
+
+**Related sections (tradeoff depth):** **§1** (aggregate boundaries **traced to concurrent write failure modes**), **§4** (upcasting, including **quantified inference risk**), **§6** (**PostgreSQL vs EventStoreDB** — full comparison table and when to choose each).
+
+### 0.1 Upcasting vs. rewriting history
+
+| | **Upcasting at read time (chosen)** | **Bulk migration of stored events** |
+|---|-------------------------------------|--------------------------------------|
+| **Pros** | Immutable audit story; DB bytes match what was actually written; mistakes in mapping are fixable in application code without touching history | Every consumer immediately sees new fields in storage; no read-path branching |
+| **Cons** | Every read path must apply the registry; upcaster bugs affect correctness until fixed | Violates immutability; blurs “recorded vs. inferred”; harder to explain to regulators |
+| **When the other side wins** | Never for regulated append-only logs where provenance matters | Possibly for internal analytics caches, not for the canonical event table |
+
+### 0.2 Relational schema (wide events table) vs. opaque blobs only
+
+| | **PostgreSQL + JSONB payloads + explicit columns (chosen)** | **Minimal event row + opaque payload only** |
+|---|-----------------------------------------------------------|---------------------------------------------|
+| **Pros** | SQL tooling, constraints, indexing for ops queries; `global_position` sequence gives safe monotonic ordering under concurrency | Simpler row shape; maximum vendor neutrality |
+| **Cons** | More columns to justify and migrate for infra concerns | Weaker database-enforced ordering and integrity unless added elsewhere |
+
+### 0.3 Optimistic concurrency vs. pessimistic locks
+
+| | **OCC with expected version (chosen)** | **Pessimistic lock for the life of the transaction** |
+|---|----------------------------------------|------------------------------------------------------|
+| **Pros** | No cross-stream deadlocks; good fit when contention per aggregate is low; clear retry story for agents | Predictable serialization under heavy contention on one aggregate |
+| **Cons** | Losers must reload and retry; thundering herds need backoff | Deadlock risk across aggregates; failed clients can hold locks until timeout |
+
+### 0.4 System integration: transactional outbox vs. dual writes
+
+| | **Outbox in the same DB transaction as events (chosen)** | **Publish-then-write or write-then-publish** |
+|---|----------------------------------------------------------|---------------------------------------------|
+| **Pros** | No orphan publishes and no “saved but never announced” if the DB commits; replay from outbox is possible | Simpler code paths if you ignore failure modes |
+| **Cons** | Requires a relay process and idempotent consumers | Famous failure modes: message without save, or save without message |
+
+### 0.5 Projection delivery: poll vs. push
+
+| | **Daemon polls on a short interval (chosen)** | **LISTEN/NOTIFY or log-based streaming** |
+|---|-----------------------------------------------|------------------------------------------|
+| **Pros** | Simple to operate; batching is natural; works everywhere PostgreSQL runs | Lower tail latency; fewer wasted wakeups |
+| **Cons** | Average lag includes half a poll interval; CPU wake every tick | More moving parts; back-pressure and consumer groups to design |
+
+---
+
 ## 1. Aggregate Boundaries & Consistency
 
 ### Why These Four Aggregates?
@@ -16,6 +60,18 @@ Each aggregate is a consistency boundary — a unit that can be mutated atomical
 **ComplianceRecord**: Separated because compliance checks are performed by a different team/system, have their own lifecycle (can be re-opened, waived, escalated), and need independent temporal queries. A compliance record can outlive the loan application decision.
 
 **AuditLedger**: Separated because it is append-only by design and serves a different consumer (auditors, regulators). It maintains a cryptographic hash chain that would be polluted if mixed with mutable business state.
+
+### Aggregate boundaries ↔ concurrent write failure modes (explicit trace)
+
+Each boundary exists to keep **OCC contention** and **failure domains** small. If two concerns shared one stream, **every** concurrent append to that stream would contend on a **single** `expected_version` — below is what goes wrong when boundaries are **not** separated.
+
+| Aggregate (kept separate) | If it were merged into `LoanApplication` only | Concurrent write / failure mode |
+|---------------------------|-----------------------------------------------|----------------------------------|
+| **ComplianceRecord** | Compliance facts appended on the loan stream | **Single OCC domain**: officer records a check while **`generate_decision`** runs → **one wins, one retries**; compliance **re-open** and loan **decision** become **sequential** on the same version line, increasing **conflict rate** and **latency**. **Separate streams**: two independent OCC sequences; handler loads both and appends to each in order — **partial failure** (loan append OK, compliance append fails) remains a **known gap** unless saga-safe (see §7). |
+| **AgentSession** | Session / Gas Town events on the loan stream | **Noise on OCC**: every `AgentNodeExecuted` bumps the loan stream version → **decision** and **node** appends **interleave** → spurious **`OptimisticConcurrencyError`** for agents; replay for **session recovery** replays **entire** loan history. **Separate stream**: session replays are **O(log session)** events. |
+| **AuditLedger** | Audit entries on the loan stream | **Throughput coupling**: each audit **append** advances loan **stream_position** → **business** and **audit** writers **fight** for the same row lock; hash chain **serialization** behind every loan event. **Separate stream**: audit chain **independent** OCC; regulators query **`audit_ledger_projection`** without touching loan command latency. |
+
+**Cross-stream orchestration:** The handler **does not** hold one transaction across two streams; **eventual consistency** between aggregates is **explicit** (milliseconds to saga completion, up to projection lag for reads).
 
 ### Schema Column Justification
 
@@ -211,6 +267,20 @@ Each upcaster handles exactly one version transition. This makes upcasters:
 
 The `UpcasterRegistry` applies the chain automatically until no more upcasters exist for the type.
 
+### Inference field error rate (quantitative framing)
+
+**Null-populated fields** (`model_version`, `reasoning`, etc.): **Aleatoric error rate for “wrong value”** is **0%** — we never emit a guessed string; we emit **unknown** (`null`). The **downstream cost** is **missing analytics** (e.g. cannot group by model), not **wrong** credit decisions from a fabricated version.
+
+**Deterministically inferred fields** (e.g. `risk_tier` from `credit_score` + `debt_to_income_ratio`):
+
+| Risk source | Approx. mis-label rate if rule is wrong | Mitigation |
+|-------------|----------------------------------------|------------|
+| **Mapping bug** in upcaster (wrong thresholds) | **100%** of historical events **re-labeled** on next read until upcaster fixed | **Unit tests** on thresholds; upcaster is versioned code — fix **redeploy** only; DB unchanged. |
+| **Business rule drift** (policy changed in 2025 but old events inferred with 2026 rule) | **Up to 100%** of pre-change events **wrong** if one rule is applied retroactively | Document **policy-as-of** in upcaster comment; **pin** rule version; or **infer only** when sibling fields **uniquely** imply tier (no date-based logic). |
+| **Random / ML inference** (not used here) | **Non-zero** FP/FN | **Not used** for regulated fields — only **pure functions** of fields already in the payload. |
+
+**Order-of-magnitude:** For a **correct** stable rule mapping score+DTI → tier, **residual error rate** is **~0** (same inputs → same tier). **Operational risk** is **rule change** without a new **schema_version** or **new upcaster step** — tracked as **process risk**, not a **statistical** error rate like ML confidence.
+
 ---
 
 ## 5. Domain Business Rules (LoanApplication aggregate)
@@ -232,18 +302,22 @@ Concurrency and causal consistency are handled separately: **OCC** on append (`e
 
 ## 6. EventStoreDB Comparison
 
+This section compares **this implementation** (PostgreSQL-backed event log + custom projections) with **EventStoreDB**, a dedicated event-database product. It answers “why not EventStoreDB?” for reviewers and assessors.
+
 ### PostgreSQL vs. EventStoreDB
 
 | Aspect | This System (PostgreSQL) | EventStoreDB |
 |---|---|---|
-| **Concurrency** | OCC via SQL upsert | OCC built-in (`expectedVersion`) |
-| **Projections** | Custom daemon + tables | Built-in persistent subscriptions |
-| **Snapshots** | Manual (not implemented) | Built-in snapshot streams |
-| **Clustering** | PostgreSQL replication | Native clustering |
-| **Subscriptions** | Polling (100ms) | Push-based (near-zero lag) |
-| **Schema** | Flexible JSONB | Opaque byte arrays |
-| **Tooling** | Standard SQL tools | EventStoreDB Admin UI |
-| **Operational complexity** | Low (existing PostgreSQL expertise) | Higher (new technology) |
+| **Concurrency** | OCC via SQL (`SELECT … FOR UPDATE` / unique constraints) + `expected_version` | Native stream **`expectedVersion`** on append |
+| **Projections** | Custom `ProjectionDaemon` + SQL tables; **poll**-based | **Persistent subscriptions**, catch-up, push-style delivery |
+| **Snapshots** | Optional `aggregate_snapshots` (manual policy) | **First-class** snapshot streams |
+| **Clustering** | PostgreSQL replication (read replicas, failover) | **Clustered** log with replication as product feature |
+| **Subscriptions** | Polling (100ms) + `global_position` | **Low-latency** subscriptions (ms typical) |
+| **Schema** | JSONB payloads + `schema_version` + upcasters | **User-defined** byte payloads + client-side serialization |
+| **Tooling** | `psql`, SQL BI, existing ops | **Dedicated UI**, projections dashboard |
+| **Operational complexity** | Low if team already runs Postgres | **New** runtime + ops discipline |
+| **Outbox / same-DB integration** | **Natural**: `events` + `outbox` + business tables **one transaction** | Requires **external** integration or sidecar for non-log stores |
+| **Licensing / hosting** | OSS Postgres + your infra | **Commercial** (Cloud or self-hosted) with product-specific costs |
 
 ### When to Choose EventStoreDB
 

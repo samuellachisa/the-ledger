@@ -53,6 +53,7 @@ _erasure: ErasureHandler | None = None
 _integrity_monitor = None
 _saga_manager = None
 _outbox_relay = None
+_projection_daemon = None
 
 
 def _get_deps():
@@ -268,6 +269,8 @@ async def create_server(
 
 
 async def main() -> None:
+    global _projection_daemon
+
     from dotenv import load_dotenv
     load_dotenv()
 
@@ -291,6 +294,25 @@ async def main() -> None:
         pool_max_size=pool_max,
         wait_for_db=True,
     )
+
+    # Projection read models (application summary, compliance audit, agent metrics)
+    if (
+        _pool
+        and _event_store
+        and os.environ.get("ENABLE_PROJECTION_DAEMON", "true").lower()
+        in ("1", "true", "yes", "on")
+    ):
+        from src.projections.agent_performance import handle_agent_performance
+        from src.projections.application_summary import handle_application_summary
+        from src.projections.compliance_audit import handle_compliance_audit
+        from src.projections.daemon import ProjectionDaemon
+
+        _projection_daemon = ProjectionDaemon(_pool, _event_store, dead_letter=_dead_letter)
+        _projection_daemon.register("ApplicationSummary", handle_application_summary)
+        _projection_daemon.register("ComplianceAuditView", handle_compliance_audit)
+        _projection_daemon.register("AgentPerformanceLedger", handle_agent_performance)
+        await _projection_daemon.start()
+        logger.info("ProjectionDaemon started with MCP server")
 
     # Start Prometheus metrics HTTP server if port is configured
     metrics_port = os.environ.get("METRICS_PORT")
@@ -348,6 +370,9 @@ async def main() -> None:
             await _saga_manager.stop()
         if _outbox_relay:
             await _outbox_relay.stop()
+        if _projection_daemon:
+            await _projection_daemon.stop()
+            _projection_daemon = None
         if _integrity_monitor:
             await _integrity_monitor.stop()
         if archival_scheduler:
